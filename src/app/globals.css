@@ -1,0 +1,416 @@
+@import "tailwindcss";
+
+:root {
+  /* Core Palette — Vietnamese Heritage × Future Technology */
+  --color-bg-void: #07090b;
+  --color-bg-primary: #0b0e11;
+  --color-bg-elevated: #11151b;
+  --color-bg-surface: #161c24;
+
+  --color-ink: #ece6db;
+  --color-ink-soft: #c8c1b5;
+  --color-ink-muted: #958c7e;
+
+  --color-bronze: #d29a5c;
+  --color-bronze-bright: #e7b980;
+  --color-bronze-deep: #99601f;
+  --color-bronze-subtle: rgba(210, 154, 92, 0.14);
+  --color-bronze-glow: rgba(210, 154, 92, 0.28);
+
+  --color-patina: #73c3a9;
+  --color-patina-subtle: rgba(115, 195, 169, 0.14);
+  --color-patina-glow: rgba(115, 195, 169, 0.3);
+
+  /* Synchronized Full-Page Drum-Beat Resonance Channels */
+  --drum-aura-pulse: 0;
+  --drum-shake-x: 0px;
+  --drum-shake-y: 0px;
+
+  /* Hairlines & Structural Borders */
+  --border-hairline: rgba(236, 230, 219, 0.09);
+  --border-hairline-strong: rgba(236, 230, 219, 0.18);
+  --border-bronze: rgba(210, 154, 92, 0.32);
+  --border-bronze-strong: rgba(210, 154, 92, 0.62);
+
+  /* Layout & Spacing Tokens */
+  --space-section-y: clamp(5.5rem, 10vw, 9.5rem);
+  --space-container-x: clamp(1.25rem, 4vw, 3.5rem);
+  --container-max: 84rem;
+  --radius-editorial: 2px;
+  --radius-pill: 9999px;
+
+  /* Motion Choreography Tokens */
+  --ease-editorial: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-heritage: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-sine: cubic-bezier(0.37, 0, 0.63, 1);
+  --duration-fast: 220ms;
+  --duration-base: 480ms;
+  --duration-slow: 900ms;
+}
+
+@theme inline {
+  --color-charcoal: var(--color-bg-primary);
+  --color-elevated: var(--color-bg-elevated);
+  --color-surface: var(--color-bg-surface);
+  --color-ivory: var(--color-ink);
+  --color-stone: var(--color-ink-soft);
+  --color-warmgray: var(--color-ink-muted);
+  --color-bronze: var(--color-bronze);
+  --color-bronze-deep: var(--color-bronze-deep);
+  --color-patina: var(--color-patina);
+
+  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-sans: var(--font-be-vietnam), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: var(--color-bg-primary);
+  color: var(--color-ink);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100dvh;
+  margin: 0;
+  background-color: var(--color-bg-primary);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  selection-background-color: var(--color-bronze);
+}
+
+/* Native Hardware Retina Đông Sơn × Cyber-Spearhead Cursor (Zero input lag, zero JS cursor draw cost!) */
+@media (pointer: fine) and (min-width: 1024px) {
+  html.custom-cursor-ready {
+    cursor:
+      -webkit-image-set(
+          url("/images/cursor-default.png") 1x,
+          url("/images/cursor-default-2x.png") 2x
+        )
+        3 3,
+      url("/images/cursor-default.png") 3 3,
+      auto;
+  }
+
+  html.custom-cursor-ready a,
+  html.custom-cursor-ready button,
+  html.custom-cursor-ready [role="button"] {
+    cursor:
+      -webkit-image-set(
+          url("/images/cursor-pointer.png") 1x,
+          url("/images/cursor-pointer-2x.png") 2x
+        )
+        3 3,
+      url("/images/cursor-pointer.png") 3 3,
+      pointer;
+  }
+}
+
+::selection {
+  background: rgba(210, 154, 92, 0.28);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 1.5px solid var(--color-bronze);
+  outline-offset: 4px;
+}
+
+/* Subtle Film Grain Overlay (GPU-friendly composited layer without fullscreen mix-blend readback) */
+.film-grain {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  opacity: 0.018;
+  transform: translateZ(0);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+}
+
+/* Prevent SSR Flash of Hero Intro Text before GSAP IntroTimeline initializes */
+[data-hero-reveal] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Editorial Container */
+.editorial-container {
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--space-container-x);
+}
+
+/* Subtle Visual Micro-Shake & Sympathetic Resonance Driven by Drum Beat */
+.drum-shake-stage {
+  transform: translate3d(var(--drum-shake-x, 0px), var(--drum-shake-y, 0px), 0);
+  will-change: transform;
+}
+
+.drum-reactive-card {
+  box-shadow: 0 0 calc(28px * var(--drum-aura-pulse, 0))
+    rgba(210, 154, 92, calc(0.28 * var(--drum-aura-pulse, 0)));
+}
+
+.drum-reactive-band {
+  box-shadow:
+    inset 0 0 calc(36px * var(--drum-aura-pulse, 0))
+      rgba(210, 154, 92, calc(0.22 * var(--drum-aura-pulse, 0))),
+    0 0 calc(28px * var(--drum-aura-pulse, 0))
+      rgba(115, 195, 169, calc(0.16 * var(--drum-aura-pulse, 0)));
+}
+
+.drum-reactive-medallion {
+  box-shadow:
+    0 0 calc(64px + 48px * var(--drum-aura-pulse, 0))
+      rgba(210, 154, 92, calc(0.22 + 0.34 * var(--drum-aura-pulse, 0))),
+    0 0 calc(32px * var(--drum-aura-pulse, 0))
+      rgba(115, 195, 169, calc(0.28 * var(--drum-aura-pulse, 0)));
+}
+
+.drum-watermark-glow {
+  filter: drop-shadow(
+    0 0 calc(18px * var(--drum-aura-pulse, 0))
+      rgba(231, 185, 128, calc(0.55 * var(--drum-aura-pulse, 0)))
+  );
+}
+
+/* Bronze Shimmer Text Sweep */
+.bronze-highlight-sweep {
+  background: linear-gradient(
+    110deg,
+    var(--color-ink) 0%,
+    var(--color-ink) 38%,
+    var(--color-bronze-bright) 50%,
+    var(--color-ink) 62%,
+    var(--color-ink) 100%
+  );
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  transition: background-position 900ms var(--ease-editorial);
+}
+
+.bronze-highlight-sweep:hover {
+  background-position: -100% 0;
+}
+
+/* Keyframes */
+@keyframes spin-slow-cw {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-slow-ccw {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes scroll-pulse {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+    opacity: 0.2;
+  }
+  50% {
+    transform: scaleY(1);
+    transform-origin: top;
+    opacity: 1;
+  }
+  50.01% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+    opacity: 1;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+    opacity: 0.2;
+  }
+}
+
+@keyframes role-shutter-in {
+  0% {
+    opacity: 0;
+    transform: translateY(72%) skewY(2deg);
+    filter: blur(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) skewY(0deg);
+    filter: blur(0);
+  }
+}
+
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(4vw, 3vh, 0) scale(1.08);
+  }
+}
+
+@keyframes circuit-flow {
+  from {
+    stroke-dashoffset: 296;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes corner-scan-sweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.85;
+  }
+  80% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateY(420%);
+    opacity: 0;
+  }
+}
+
+@keyframes lac-wing-flap-up {
+  0%,
+  100% {
+    transform: rotate(0deg) scaleY(1);
+  }
+  50% {
+    transform: rotate(-11deg) scaleY(0.84);
+  }
+}
+
+@keyframes lac-wing-flap-down {
+  0%,
+  100% {
+    transform: rotate(0deg) scaleY(1);
+  }
+  50% {
+    transform: rotate(10deg) scaleY(0.86);
+  }
+}
+
+@keyframes lac-horizon-soar {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-6deg);
+  }
+  50% {
+    transform: translate3d(8px, -10px, 0) rotate(-2deg);
+  }
+}
+
+@keyframes horizon-ripple {
+  0% {
+    transform: scale(0.72);
+    opacity: 0.72;
+  }
+  100% {
+    transform: scale(1.24);
+    opacity: 0;
+  }
+}
+
+.animate-spin-cw {
+  animation: spin-slow-cw 84s linear infinite;
+}
+
+.animate-spin-ccw {
+  animation: spin-slow-ccw 64s linear infinite;
+}
+
+.animate-scroll-line {
+  animation: scroll-pulse 2.6s var(--ease-heritage) infinite;
+}
+
+.animate-role-shutter {
+  animation: role-shutter-in 560ms var(--ease-editorial) both;
+}
+
+.animate-aurora-drift {
+  animation: aurora-drift 18s ease-in-out infinite;
+}
+
+.animate-aurora-drift-reverse {
+  animation: aurora-drift 22s ease-in-out infinite reverse;
+}
+
+.animate-circuit-flow {
+  animation: circuit-flow 6.5s linear infinite;
+}
+
+.animate-corner-scan {
+  animation: corner-scan-sweep 2.1s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.animate-wing-upper {
+  transform-box: fill-box;
+  transform-origin: 20% 85%;
+  animation: lac-wing-flap-up 1.65s ease-in-out infinite;
+}
+
+.animate-wing-lower {
+  transform-box: fill-box;
+  transform-origin: 20% 15%;
+  animation: lac-wing-flap-down 1.65s ease-in-out infinite;
+}
+
+.animate-lac-soar {
+  animation: lac-horizon-soar 4.6s ease-in-out infinite;
+}
+
+.animate-horizon-ripple {
+  transform-origin: 280px 164px;
+  animation: horizon-ripple 3.8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.animate-horizon-ripple-delayed {
+  transform-origin: 280px 164px;
+  animation: horizon-ripple 3.8s cubic-bezier(0.16, 1, 0.3, 1) 1.9s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  [data-hero-reveal] {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
