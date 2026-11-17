@@ -9,10 +9,11 @@ import { useIntroStore } from "@/store/introStore";
 import { useLocaleStore } from "@/store/localeStore";
 import { LacBirdGlyph, SunFourteenIcon } from "@/components/ui/DongSonMotifs";
 import { ScrambleText } from "@/components/ui/ScrambleText";
+import { SplitHeading } from "@/components/ui/SplitHeading";
 
 /**
  * Flagship Open-Source Monograph Spread featuring:
- * 1) Bronze Curtain Reveal on Scroll (`[data-bronze-curtain]`)
+ * 1) Sleek Optical Clip-Reveal & Translucent Bronze Glass Sheen on Scroll (`[data-bronze-sheen]`)
  * 2) Đông Sơn Corner-Bracket Light Scan (`animate-corner-scan` + glowing corner blades) on Hover
  * 3) Telemetry Text Scramble (`<ScrambleText />`) decoding repo slug, metrics & architecture specs
  */
@@ -331,16 +332,11 @@ export function ProjectsSection() {
               <LacBirdGlyph className="h-4 w-8 text-[var(--color-bronze)]" />
               <span>{projects.eyebrow}</span>
             </p>
-            <h2
+            <SplitHeading
               id="projects-heading"
-              data-split-heading
-              data-velocity-skew
-              className="overflow-hidden font-display text-[clamp(2.5rem,5.4vw,4.6rem)] leading-[1.05] font-medium tracking-[-0.025em] text-[var(--color-ink)] will-change-transform"
-            >
-              <span data-split-line className="block">
-                {projects.heading}
-              </span>
-            </h2>
+              text={projects.heading}
+              className="font-display text-[clamp(2.5rem,5.4vw,4.6rem)] leading-[1.05] font-medium tracking-[-0.025em] text-[var(--color-ink)]"
+            />
             <p
               data-scroll-reveal
               className="mt-4 max-w-2xl text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base"

@@ -57,14 +57,14 @@ export function PortraitReveal() {
           float dist = length(centered);
           if (dist > 1.0) discard;
 
-          // 14-harmonic Đông Sơn sun iris edge during reveal, flattening cleanly at uReveal = 1
+          // Crisp 14-harmonic Đông Sơn sun iris edge during reveal (no wide translucent muddy band!)
           float angle = atan(centered.y, centered.x);
-          float harmonic = sin(angle * 14.0 - uTime * 1.8) * 0.028 * sin(uReveal * 3.14159);
-          float maxR = uReveal * 1.14;
-          float irisMask = smoothstep(maxR + 0.045, maxR - 0.10, dist + harmonic);
+          float harmonic = sin(angle * 14.0 - uTime * 1.8) * 0.024 * sin(uReveal * 3.14159);
+          float maxR = uReveal * 1.12;
+          float irisMask = smoothstep(maxR + 0.014, maxR - 0.020, dist + harmonic);
 
-          // Subtle luminous golden frontier ring ONLY right along the expanding iris edge
-          float frontier = exp(-pow((dist + harmonic - maxR + 0.025) / 0.042, 2.0)) * sin(uReveal * 3.14159);
+          // Razor-clean luminous golden frontier filament strictly along the expanding iris edge
+          float frontier = exp(-pow((dist + harmonic - maxR + 0.004) / 0.022, 2.0)) * sin(uReveal * 3.14159);
 
           // Restrained 2.5D pointer parallax that settles cleanly as DOM handoff approaches
           float parallaxAmt = (1.0 - smoothstep(0.0, 0.85, uHandoff)) * 0.008;
@@ -73,14 +73,14 @@ export function PortraitReveal() {
             ? texture2D(uTexture, sampleUv)
             : vec4(0.04, 0.05, 0.07, 1.0);
 
-          // Delicate linear-space golden iris edge & fine outer rim kiss without tinting skin/skyline
-          vec3 linearGold = vec3(0.72, 0.42, 0.14);
-          float rimKiss = smoothstep(0.965, 1.0, dist) * 0.22 * (1.0 - uHandoff);
-          vec3 color = texColor.rgb + linearGold * (frontier * 0.55 + rimKiss);
+          // Delicate linear-space golden iris edge & hairline outer rim kiss — 100% pure portrait colors inside!
+          vec3 linearGold = vec3(0.72, 0.44, 0.16);
+          float rimKiss = smoothstep(0.984, 1.0, dist) * 0.14 * (1.0 - uHandoff);
+          vec3 color = texColor.rgb + linearGold * (frontier * 0.42 + rimKiss);
 
           // Smoothly yield inner disc to high-DPI DOM <img> at exact pixel & sRGB lock
           float domYield = 1.0 - smoothstep(0.35, 1.0, uHandoff);
-          float finalAlpha = irisMask * domYield * smoothstep(1.0, 0.986, dist);
+          float finalAlpha = irisMask * domYield * smoothstep(1.0, 0.988, dist);
 
           gl_FragColor = vec4(color, finalAlpha);
           #include <colorspace_fragment>

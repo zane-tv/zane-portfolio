@@ -109,12 +109,12 @@ export function CraneFlightController() {
   const approachSpline = useMemo(() => {
     return new THREE.CatmullRomCurve3(
       [
-        new THREE.Vector3(-3.85, -0.42, 1.52), // Enters promptly from left foreground
-        new THREE.Vector3(-1.45, 0.18, 1.08),  // Sweeps across golden spotlight
-        new THREE.Vector3(0.18, 0.32, 0.78),   // Heroic center-stage pass
-        new THREE.Vector3(1.26, -0.32, 0.48),  // Graceful dive into lower-right orbital entry
-        new THREE.Vector3(1.18, -0.88, 0.32),  // Tangential entry into counter-clockwise circle
-        new THREE.Vector3(1.36, 0.08, 0.20),   // 3-o'clock ascending arc
+        new THREE.Vector3(-3.55, -0.34, 1.08), // Enters promptly from left foreground
+        new THREE.Vector3(-1.35, 0.08, 0.78),  // Sweeps across golden spotlight with full headroom
+        new THREE.Vector3(0.14, 0.14, 0.56),   // Heroic center-stage pass
+        new THREE.Vector3(1.18, -0.28, 0.38),  // Graceful dive into lower-right orbital entry
+        new THREE.Vector3(1.16, -0.82, 0.26),  // Tangential entry into counter-clockwise circle
+        new THREE.Vector3(1.32, 0.06, 0.16),   // 3-o'clock ascending arc
       ],
       false,
       "centripetal",
@@ -323,15 +323,19 @@ export function CraneFlightController() {
       _finalQuat.copy(_flightQuat).slerp(_stampQuat, poseBlend);
       rigRef.current.quaternion.slerp(_finalQuat, 0.28 + poseBlend * 0.55);
 
-      // Smooth progressive scale & relief depth compression (no sudden late shrink!)
-      const targetReliefScale = 0.168 * drumRadiusScale;
-      const scaleEase = smootherstep(merge, 0.0, 0.9);
-      const preOrbitTaper = THREE.MathUtils.lerp(1.0, 0.76, smootherstep(u, 0.5, 0.92));
+      // Continuous progressive scale & relief depth compression matching Lead Bird #0 (`0.118 * S`)
+      const targetReliefScale = 0.118 * drumRadiusScale;
+      const scaleEase = smootherstep(merge, 0.0, 0.86);
+      const preOrbitTaper = THREE.MathUtils.lerp(
+        0.86,
+        Math.max(0.26, targetReliefScale * 2.1),
+        smootherstep(u, 0.22, 0.96)
+      );
       const xyScale = THREE.MathUtils.lerp(preOrbitTaper, targetReliefScale, scaleEase);
       const zScale = THREE.MathUtils.lerp(
         preOrbitTaper,
-        targetReliefScale * 0.2,
-        smootherstep(merge, 0.12, 0.92)
+        targetReliefScale * 0.18,
+        smootherstep(merge, 0.08, 0.88)
       );
       rigRef.current.scale.set(xyScale, xyScale, zScale);
       rigRef.current.updateMatrixWorld(true);
@@ -339,12 +343,12 @@ export function CraneFlightController() {
 
     // Update Golden Molten Assimilation Halo bridging 3D crane -> Bird #0 relief
     if (assimilationHaloRef.current) {
-      const haloBell = Math.sin(smootherstep(merge, 0.18, 0.98) * Math.PI);
+      const haloBell = Math.sin(smootherstep(merge, 0.14, 0.96) * Math.PI);
       assimilationHaloRef.current.visible = haloBell > 0.01 && enter > 0.1;
       assimilationHaloRef.current.position.set(_pos.x, _pos.y, _pos.z + 0.02);
-      const haloScale = (0.38 + (1 - merge) * 0.42) * drumRadiusScale;
+      const haloScale = (0.28 + (1 - merge) * 0.28) * drumRadiusScale;
       assimilationHaloRef.current.scale.setScalar(haloScale);
-      assimilationHalo.mat.uniforms.uIntensity!.value = haloBell * 0.92;
+      assimilationHalo.mat.uniforms.uIntensity!.value = haloBell * 0.85;
       assimilationHalo.mat.uniforms.uTime!.value = t;
     }
 
@@ -370,14 +374,25 @@ export function CraneFlightController() {
       }
 
       const posAttr = ribbon.geometry.attributes.position as THREE.BufferAttribute;
+      let prevNx = 0;
+      let prevNy = 1;
       for (let i = 0; i < RIBBON_NODES; i++) {
         const pt = ribbon.history[i]!;
-        const width = 0.028 * (1 - i / RIBBON_NODES) * (1 - mergeLock * 0.72);
-        ribbon.positions[i * 6] = pt.x;
-        ribbon.positions[i * 6 + 1] = pt.y + width;
+        const adj = ribbon.history[Math.min(RIBBON_NODES - 1, i + 1)]!;
+        const prev = ribbon.history[Math.max(0, i - 1)]!;
+        const dx = prev.x - adj.x;
+        const dy = prev.y - adj.y;
+        const segLen = Math.hypot(dx, dy);
+        if (segLen > 1e-4) {
+          prevNx = -dy / segLen;
+          prevNy = dx / segLen;
+        }
+        const width = 0.024 * (1 - i / RIBBON_NODES) * (1 - mergeLock * 0.78);
+        ribbon.positions[i * 6] = pt.x + prevNx * width;
+        ribbon.positions[i * 6 + 1] = pt.y + prevNy * width;
         ribbon.positions[i * 6 + 2] = pt.z;
-        ribbon.positions[i * 6 + 3] = pt.x;
-        ribbon.positions[i * 6 + 4] = pt.y - width;
+        ribbon.positions[i * 6 + 3] = pt.x - prevNx * width;
+        ribbon.positions[i * 6 + 4] = pt.y - prevNy * width;
         ribbon.positions[i * 6 + 5] = pt.z;
       }
       posAttr.needsUpdate = true;

@@ -1,6 +1,6 @@
 import { getGitHubTelemetry } from "@/lib/github";
 import { SiteHeader } from "@/components/sections/SiteHeader";
-import { HeroSection } from "@/components/sections/HeroSection";
+import { HeroSection, IntroSkipControl } from "@/components/sections/HeroSection";
 import { ExpertiseSection } from "@/components/sections/ExpertiseSection";
 import { ProjectsSection } from "@/components/sections/ProjectsSection";
 import { GitHubTelemetrySection } from "@/components/sections/GitHubTelemetrySection";
@@ -23,6 +23,7 @@ export default async function HomePage() {
       <DongSonCursor />
       <ParallaxHeritageBackdrop />
       <SiteHeader />
+      <IntroSkipControl />
       <ScrollMotionController />
       <div className="drum-shake-stage relative z-10">
         <main id="main-content">

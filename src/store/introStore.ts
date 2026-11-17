@@ -166,6 +166,7 @@ interface IntroStoreState {
   reducedMotion: boolean;
   isMobileViewport: boolean;
   webglSupported: boolean;
+  webglReady: boolean;
   webglContextLost: boolean;
   heroInView: boolean;
   replayCount: number;
@@ -175,6 +176,7 @@ interface IntroStoreState {
   setReducedMotion: (reduced: boolean) => void;
   setIsMobileViewport: (isMobile: boolean) => void;
   setWebglSupported: (supported: boolean) => void;
+  setWebglReady: (ready: boolean) => void;
   setWebglContextLost: (lost: boolean) => void;
   setHeroInView: (inView: boolean) => void;
   requestSkip: () => void;
@@ -187,6 +189,7 @@ export const useIntroStore = create<IntroStoreState>((set) => ({
   reducedMotion: false,
   isMobileViewport: false,
   webglSupported: true,
+  webglReady: false,
   webglContextLost: false,
   heroInView: true,
   replayCount: 0,
@@ -201,6 +204,7 @@ export const useIntroStore = create<IntroStoreState>((set) => ({
   setReducedMotion: (reducedMotion) => set({ reducedMotion }),
   setIsMobileViewport: (isMobileViewport) => set({ isMobileViewport }),
   setWebglSupported: (supported) => set({ webglSupported: supported }),
+  setWebglReady: (ready) => set({ webglReady: ready }),
   setWebglContextLost: (lost) => set({ webglContextLost: lost }),
   setHeroInView: (inView) => set({ heroInView: inView }),
 

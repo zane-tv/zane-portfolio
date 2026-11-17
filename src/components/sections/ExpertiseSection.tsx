@@ -6,6 +6,7 @@ import { useLocaleStore } from "@/store/localeStore";
 import type { ExpertiseCategory, ExpertiseMotionStyle } from "@/types/portfolio";
 import { buildSunPolygonPoints } from "@/components/ui/DongSonMotifs";
 import { ScrambleText } from "@/components/ui/ScrambleText";
+import { SplitHeading } from "@/components/ui/SplitHeading";
 
 function DisciplineKineticDiagram({
   style,
@@ -269,9 +270,9 @@ function DisciplineCard({ category }: { category: ExpertiseCategory }) {
           {category.description}
         </p>
         <div className="mt-3.5 flex flex-wrap gap-2">
-          {category.capabilities.map((cap) => (
+          {category.capabilities.map((cap, idx) => (
             <span
-              key={cap}
+              key={`cap-${idx}`}
               className="border border-[var(--border-hairline-strong)] bg-[rgba(13,17,23,0.72)] px-2.5 py-1 font-mono text-[10px] tracking-[0.12em] text-[var(--color-ink-soft)] uppercase transition-colors group-hover:border-[rgba(210,154,92,0.35)]"
             >
               {cap}
@@ -318,16 +319,11 @@ export function ExpertiseSection() {
             >
               {expertise.eyebrow}
             </p>
-            <h2
+            <SplitHeading
               id="expertise-heading"
-              data-split-heading
-              data-velocity-skew
-              className="overflow-hidden font-display text-[clamp(2.4rem,5vw,4.25rem)] leading-[1.06] font-medium tracking-[-0.02em] text-[var(--color-ink)] will-change-transform"
-            >
-              <span data-split-line className="block">
-                {expertise.heading}
-              </span>
-            </h2>
+              text={expertise.heading}
+              className="font-display text-[clamp(2.4rem,5vw,4.25rem)] leading-[1.06] font-medium tracking-[-0.02em] text-[var(--color-ink)]"
+            />
           </div>
           <p
             data-scroll-reveal

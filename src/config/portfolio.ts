@@ -30,7 +30,7 @@ export const portfolioConfig: PortfolioConfig = {
       "Lately: architecting Daito's manufacturing platform (Japan), medallion PySpark lakehouses on Microsoft Fabric, a local-first WebGPU OCR extension, holdframe motion skills, and interactive 9:16 TikTok Live stages.",
     biography:
       "Full-stack software engineer (Trương Văn Tiến) in Ho Chi Minh City with nearly 4 years delivering production web, AI, and data platforms across Japan, Germany, and Sweden — alongside high-craft open-source developer tools.",
-    location: "TP. Hồ Chí Minh, Việt Nam",
+    location: "Ho Chi Minh City, Vietnam",
     coordinates: "10.8231° N · 106.6297° E",
     primaryStack: "TypeScript · Go · Python · PHP/Laravel · Next.js · NestJS · PySpark",
     stackList: [
@@ -54,7 +54,7 @@ export const portfolioConfig: PortfolioConfig = {
       replacementNote: "Replace /public/images/portrait.webp with any square WebP portrait.",
     },
     availability:
-      "Available for ambitious full-stack, AI/agent, and data-platform engineering — Global & Việt Nam",
+      "Available for ambitious full-stack, AI/agent & data-platform engineering — Global & Vietnam",
   },
 
   links: {
@@ -292,7 +292,7 @@ export const portfolioConfig: PortfolioConfig = {
         watermarkYear: "2026",
         role: "Software & Data Platform Engineer",
         organization: "ZEN-S",
-        location: "TP. Hồ Chí Minh",
+        location: "Ho Chi Minh City, Vietnam",
         regionTag: "JAPAN & ENTERPRISE",
         summary:
           "Leading full-stack web architecture and enterprise medallion lakehouse engineering across flagship industrial, financial bidding, and Japanese B2B SaaS systems.",
@@ -310,7 +310,7 @@ export const portfolioConfig: PortfolioConfig = {
         watermarkYear: "OSS",
         role: "Independent Creator & AI Toolmaker",
         organization: "github.com/zane-tv · Open Source",
-        location: "Việt Nam",
+        location: "Vietnam",
         regionTag: "GLOBAL OSS · 400+ ★",
         summary:
           "Crafting viral real-time cultural stages, native desktop database clients, multi-provider AI quota routers, and local-first WebGPU developer extensions.",
@@ -362,7 +362,7 @@ export const portfolioConfig: PortfolioConfig = {
         watermarkYear: "2022",
         role: "React Native Mobile Developer Intern",
         organization: "THEGOODGUYS TECHNOLOGY",
-        location: "TP. Hồ Chí Minh",
+        location: "Ho Chi Minh City, Vietnam",
         regionTag: "MOBILE & AGRITECH",
         summary:
           "Engineered cross-platform mobile field-tracking software powered by real-time QR scanning and Laravel APIs.",
@@ -433,19 +433,19 @@ export const portfolioConfig: PortfolioConfig = {
   },
 
   contact: {
-    eyebrow: "06 // FINAL SCENE · KẾT NỐI CÙNG TRƯƠNG VĂN TIẾN (ZANE)",
+    eyebrow: "06 // FINAL SCENE · START A DIALOGUE",
     headline: "Have a real problem worth solving? Let's ship it.",
     subheadline:
       "Reach out for full-stack product engineering, AI & agent infrastructure, Microsoft Fabric / PySpark lakehouses, or custom developer tools — from Ho Chi Minh City to the world.",
     closingMotto:
-      "TRƯƠNG VĂN TIẾN · ZANE (@ZANE-TV) · TRỐNG ĐỒNG ĐÔNG SƠN × FUTURE SYSTEMS · TP.HCM, VIỆT NAM",
+      "TRƯƠNG VĂN TIẾN · ZANE (@ZANE-TV) · ĐÔNG SƠN HERITAGE × FUTURE SYSTEMS · HCMC, VIETNAM",
   },
 
   seo: {
     title: "Zane — Trương Văn Tiến (@zane-tv) | Full-Stack, AI & Data Software Engineer",
     description:
       "Cinematic 3D Đông Sơn portfolio of Trương Văn Tiến — Zane (@zane-tv, Ho Chi Minh City): Full-Stack, AI, Data & DevOps Engineer delivering across Japan, Sweden, and Germany.",
-    siteUrl: "https://github.com/zane-tv",
+    siteUrl: "https://portfolio-mu-lilac-47.vercel.app",
     keywords: [
       "Trương Văn Tiến",
       "Truong Van Tien",

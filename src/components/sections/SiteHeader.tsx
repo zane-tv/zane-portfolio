@@ -13,6 +13,7 @@ export function SiteHeader() {
 
   const isIntroComplete = useIntroStore((s) => s.isIntroComplete);
   const webglSupported = useIntroStore((s) => s.webglSupported);
+  const webglContextLost = useIntroStore((s) => s.webglContextLost);
   const requestReplay = useIntroStore((s) => s.requestReplay);
 
   const locale = useLocaleStore((s) => s.locale);
@@ -36,31 +37,40 @@ export function SiteHeader() {
     { href: "#contact", label: ui.nav.dialogue },
   ] as const;
 
+  const canReplay = webglSupported && !webglContextLost;
+
   const handleReplay = () => {
     setMobileMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "instant" });
     requestReplay();
   };
 
   const showSolidBg = isScrolled || mobileMenuOpen;
 
   return (
-    <header
-      aria-hidden={!isIntroComplete}
-      style={{
-        backgroundColor: showSolidBg ? "rgba(11, 14, 17, 0.9)" : "transparent",
-        backdropFilter: showSolidBg ? "blur(16px)" : "none",
-      }}
-      className={clsx(
-        "fixed inset-x-0 top-0 z-50 transition-[transform,opacity,background-color,border-color,backdrop-filter,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
-        isIntroComplete
-          ? "pointer-events-auto translate-y-0 opacity-100"
-          : "pointer-events-none invisible -translate-y-[150%] opacity-0",
-        showSolidBg
-          ? "border-b border-[var(--border-bronze)] shadow-[0_10px_36px_rgba(0,0,0,0.55)]"
-          : "border-b border-transparent shadow-none"
-      )}
-    >
+    <>
+      <a
+        href="#expertise"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:border focus:border-[var(--color-bronze)] focus:bg-[var(--color-bg-primary)] focus:px-4 focus:py-2 focus:font-mono focus:text-xs focus:text-[var(--color-ink)]"
+      >
+        {ui.nav.skipToMain}
+      </a>
+      <header
+        aria-hidden={!isIntroComplete}
+        style={{
+          backgroundColor: showSolidBg ? "rgba(11, 14, 17, 0.9)" : "transparent",
+          backdropFilter: showSolidBg ? "blur(16px)" : "none",
+        }}
+        className={clsx(
+          "fixed inset-x-0 top-0 z-50 transition-[transform,opacity,background-color,border-color,backdrop-filter,box-shadow] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          isIntroComplete
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none invisible -translate-y-[150%] opacity-0",
+          showSolidBg
+            ? "border-b border-[var(--border-bronze)] shadow-[0_10px_36px_rgba(0,0,0,0.55)]"
+            : "border-b border-transparent shadow-none"
+        )}
+      >
       <div className="editorial-container flex h-16 items-center justify-between gap-4 sm:h-[4.25rem]">
         {/* Brand Identity + 14-Ray Đông Sơn Sun */}
         <a
@@ -85,7 +95,7 @@ export function SiteHeader() {
         </a>
 
         {/* Primary Section Navigation (Crisp legibility over transparent Hero & solid scroll state) */}
-        <nav aria-label="Primary navigation" className="hidden items-center gap-7 lg:flex">
+        <nav aria-label={ui.nav.primaryNavAria} className="hidden items-center gap-7 lg:flex">
           {navLinks.map((link) => (
             <a
               key={link.href}
@@ -139,7 +149,7 @@ export function SiteHeader() {
             </button>
           </div>
 
-          {webglSupported && (
+          {canReplay && (
             <button
               type="button"
               tabIndex={isIntroComplete ? 0 : -1}
@@ -159,7 +169,7 @@ export function SiteHeader() {
             tabIndex={isIntroComplete ? 0 : -1}
             aria-expanded={mobileMenuOpen}
             aria-controls="mobile-nav-drawer"
-            aria-label="Toggle navigation menu"
+            aria-label={ui.nav.toggleMenuAria}
             onClick={() => setMobileMenuOpen((v) => !v)}
             className="inline-flex h-9 w-9 cursor-pointer items-center justify-center border border-[var(--border-hairline-strong)] bg-[rgba(11,14,17,0.65)] text-[var(--color-ink)] backdrop-blur-md lg:hidden"
           >
@@ -171,7 +181,7 @@ export function SiteHeader() {
       {mobileMenuOpen && isIntroComplete && (
         <nav
           id="mobile-nav-drawer"
-          aria-label="Mobile navigation"
+          aria-label={ui.nav.mobileNavAria}
           className="border-t border-[var(--border-hairline)] bg-[rgba(13,17,23,0.96)] px-6 py-5 backdrop-blur-xl lg:hidden"
         >
           <ul className="flex flex-col gap-3.5">
@@ -186,7 +196,7 @@ export function SiteHeader() {
                 </a>
               </li>
             ))}
-            {webglSupported && (
+            {canReplay && (
               <li className="border-t border-[var(--border-hairline)] pt-2">
                 <button
                   type="button"
@@ -202,5 +212,6 @@ export function SiteHeader() {
         </nav>
       )}
     </header>
+    </>
   );
 }

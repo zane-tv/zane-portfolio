@@ -18,6 +18,36 @@ const ExperienceCanvas = dynamic(
   { ssr: false }
 );
 
+/**
+ * Viewport-level Skip Intro control rendered outside `.drum-shake-stage` so `position: fixed`
+ * stays strictly anchored to the bottom-right of the browser viewport on both desktop & mobile.
+ */
+export function IntroSkipControl() {
+  const isIntroComplete = useIntroStore((s) => s.isIntroComplete);
+  const webglSupported = useIntroStore((s) => s.webglSupported);
+  const webglContextLost = useIntroStore((s) => s.webglContextLost);
+  const requestSkip = useIntroStore((s) => s.requestSkip);
+  const locale = useLocaleStore((s) => s.locale);
+  const { ui } = getLocalizedPortfolio(locale);
+
+  if (!webglSupported || webglContextLost || isIntroComplete) {
+    return null;
+  }
+
+  return (
+    <div className="fixed right-5 bottom-6 z-50 sm:right-8 sm:bottom-8">
+      <button
+        type="button"
+        onClick={requestSkip}
+        className="pointer-events-auto inline-flex cursor-pointer items-center gap-2 border border-[rgba(210,154,92,0.48)] bg-[#080b0f]/82 px-3.5 py-2 font-mono text-[10px] tracking-[0.2em] text-[var(--color-ink-soft)] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.55)] backdrop-blur-md transition-all hover:border-[var(--color-bronze-bright)] hover:text-[var(--color-ink)]"
+      >
+        <span>{ui.hero.skipIntro}</span>
+        <span className="hidden text-[var(--color-bronze)] sm:inline">[ESC]</span>
+      </button>
+    </div>
+  );
+}
+
 export function HeroSection() {
   const heroSectionRef = useRef<HTMLElement>(null);
   const portraitSlotRef = useRef<HTMLDivElement>(null);
@@ -28,7 +58,6 @@ export function HeroSection() {
   const webglSupported = useIntroStore((s) => s.webglSupported);
   const webglContextLost = useIntroStore((s) => s.webglContextLost);
   const reducedMotion = useIntroStore((s) => s.reducedMotion);
-  const requestSkip = useIntroStore((s) => s.requestSkip);
 
   const locale = useLocaleStore((s) => s.locale);
   const { config, ui } = getLocalizedPortfolio(locale);
@@ -77,20 +106,6 @@ export function HeroSection() {
         portraitSlotRef={portraitSlotRef}
         portraitDomWrapRef={portraitDomWrapRef}
       />
-
-      {/* Minimal Skip Intro Control ONLY during Intro (Zero letterbox bars, zero scene caption text!) */}
-      {!showStaticHalo && !isIntroComplete && (
-        <div className="fixed right-5 bottom-6 z-40 sm:right-8 sm:bottom-8">
-          <button
-            type="button"
-            onClick={requestSkip}
-            className="pointer-events-auto inline-flex cursor-pointer items-center gap-2 border border-[rgba(210,154,92,0.45)] bg-[#080b0f]/75 px-3.5 py-2 font-mono text-[10px] tracking-[0.2em] text-[var(--color-ink-soft)] uppercase backdrop-blur-md transition-all hover:border-[var(--color-bronze-bright)] hover:text-[var(--color-ink)]"
-          >
-            <span>{ui.hero.skipIntro}</span>
-            <span className="text-[var(--color-bronze)]">[ESC]</span>
-          </button>
-        </div>
-      )}
 
       {/* Asymmetric Editorial Hero Layout */}
       <div className="editorial-container relative z-20 grid grid-cols-1 items-center gap-8 lg:grid-cols-12 lg:gap-8">

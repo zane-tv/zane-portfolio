@@ -4,6 +4,7 @@ import { getLocalizedPortfolio } from "@/config/i18n";
 import { useLocaleStore } from "@/store/localeStore";
 import type { JourneyMotif } from "@/types/portfolio";
 import { buildSunPolygonPoints, LacBirdGlyph, SunFourteenIcon } from "@/components/ui/DongSonMotifs";
+import { SplitHeading } from "@/components/ui/SplitHeading";
 
 function MilestoneMotifSeal({ motif }: { motif: JourneyMotif }) {
   switch (motif) {
@@ -81,16 +82,11 @@ export function ExperienceSection() {
           >
             {experience.eyebrow}
           </p>
-          <h2
+          <SplitHeading
             id="journey-heading"
-            data-split-heading
-            data-velocity-skew
-            className="overflow-hidden font-display text-[clamp(2.5rem,5.2vw,4.5rem)] leading-[1.05] font-medium tracking-[-0.02em] text-[var(--color-ink)] will-change-transform"
-          >
-            <span data-split-line className="block">
-              {experience.heading}
-            </span>
-          </h2>
+            text={experience.heading}
+            className="font-display text-[clamp(2.5rem,5.2vw,4.5rem)] leading-[1.05] font-medium tracking-[-0.02em] text-[var(--color-ink)]"
+          />
           <p
             data-scroll-reveal
             className="mt-4 text-sm leading-relaxed text-[var(--color-ink-muted)] sm:text-base"
@@ -99,25 +95,24 @@ export function ExperienceSection() {
           </p>
         </div>
 
-        {/* Open Vertical Meridian Spine with Leading Molten Bronze Spark */}
+        {/* Open Vertical Meridian Spine with Exact-Tip Molten Bronze Spark */}
         <div className="relative pl-8 sm:pl-14">
           <div
             aria-hidden="true"
-            className="absolute top-3 bottom-3 left-2.5 w-[1px] bg-[var(--border-hairline-strong)] sm:left-4"
-          />
-          <div
-            data-timeline-progress
-            aria-hidden="true"
-            className="absolute top-3 bottom-3 left-2.5 w-[2px] bg-gradient-to-b from-[#fff3d6] via-[var(--color-bronze-bright)] to-[var(--color-patina)] shadow-[0_0_14px_rgba(246,213,155,0.6)] sm:left-4"
-          />
-
-          {/* Leading Molten Bronze Spark Orb (`Đầu lửa đồng nóng chảy dẫn đường`) */}
-          <div
-            data-molten-spark
-            aria-hidden="true"
-            style={{ top: "0%", opacity: 0.35 }}
-            className="pointer-events-none absolute left-2.5 z-20 -ml-[9px] -mt-[9px] flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[radial-gradient(circle,#ffffff_0%,#f6d59b_42%,rgba(210,154,92,0)_75%)] shadow-[0_0_24px_6px_rgba(246,213,155,0.85)] sm:left-4"
-          />
+            className="pointer-events-none absolute top-3 bottom-3 left-2.5 w-[2px] sm:left-4"
+          >
+            <div className="absolute inset-y-0 left-0 w-[1px] bg-[var(--border-hairline-strong)]" />
+            <div
+              data-timeline-progress
+              className="absolute inset-0 bg-gradient-to-b from-[#fff3d6] via-[var(--color-bronze-bright)] to-[var(--color-patina)] shadow-[0_0_14px_rgba(246,213,155,0.6)]"
+            />
+            {/* Leading Molten Bronze Spark Orb (`Đầu lửa đồng nóng chảy dẫn đường` locked 1:1 to progress tip) */}
+            <div
+              data-molten-spark
+              style={{ top: "0%", opacity: 0.35 }}
+              className="absolute left-1/2 z-20 -ml-[9.5px] -mt-[9.5px] flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[radial-gradient(circle,#ffffff_0%,#f6d59b_42%,rgba(210,154,92,0)_75%)] shadow-[0_0_24px_6px_rgba(246,213,155,0.85)]"
+            />
+          </div>
 
           <ol className="divide-y divide-[var(--border-hairline)]">
             {experience.milestones.map((milestone, idx) => (
@@ -163,7 +158,7 @@ export function ExperienceSection() {
                   </div>
 
                   {/* Đông Sơn Seal that Illuminates & Rotates Open as Molten Spark Reaches It */}
-                  <div className="mt-6 hidden items-center gap-3.5 lg:flex">
+                  <div className="mt-4 flex items-center gap-3.5 lg:mt-6">
                     <div data-milestone-seal className="origin-center will-change-transform">
                       <MilestoneMotifSeal motif={milestone.motif} />
                     </div>
@@ -229,9 +224,9 @@ export function ExperienceSection() {
             </h3>
 
             <div className="mt-8 space-y-6">
-              {experience.education.map((edu) => (
+              {experience.education.map((edu, idx) => (
                 <div
-                  key={edu.institution}
+                  key={`edu-${idx}`}
                   data-scroll-reveal
                   className="drum-reactive-card relative border border-[var(--border-hairline-strong)] border-l-2 border-l-[var(--color-bronze)] bg-[rgba(13,17,23,0.88)] p-6"
                 >
@@ -273,7 +268,7 @@ export function ExperienceSection() {
             </h3>
 
             <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {experience.honors.map((honor) => {
+              {experience.honors.map((honor, idx) => {
                 const badgeLabel =
                   honor.tier === "national"
                     ? jUi.tierNational
@@ -282,7 +277,7 @@ export function ExperienceSection() {
                       : jUi.tierAcademic;
                 return (
                   <div
-                    key={honor.title}
+                    key={`honor-${idx}`}
                     data-scroll-reveal
                     className="drum-reactive-card group relative flex flex-col justify-between border border-[var(--border-hairline-strong)] bg-[rgba(13,17,23,0.88)] p-5 transition-colors hover:border-[var(--border-bronze)]"
                   >

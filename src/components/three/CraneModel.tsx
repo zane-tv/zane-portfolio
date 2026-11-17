@@ -3,7 +3,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { introMotionState } from "@/store/introStore";
 
 const _ivoryBaseColor = new THREE.Color("#f3ede2");
@@ -246,27 +245,6 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       return true;
     },
   }));
-
-  useEffect(() => {
-    const loader = new GLTFLoader();
-    let cancelled = false;
-    loader.load(
-      "/models/crane.glb",
-      (gltf) => {
-        if (cancelled) return;
-        gltf.scene.traverse((obj) => {
-          if ((obj as THREE.Mesh).isMesh) {
-            (obj as THREE.Mesh).geometry.dispose();
-          }
-        });
-      },
-      undefined,
-      () => {}
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const geometries = useMemo(() => {
     const { bodyGeom, beakGeom } = createLoftedCraneTorsoAndNeck();
@@ -517,20 +495,27 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
     const downstroke = Math.sin(phase);
     const wristWave = Math.sin(phase - 0.78);
 
-    // As merge -> 1, spread wings wide into the iconic Đông Sơn Chim Lạc crescent pose!
-    const shoulderAngle = (downstroke * 0.52 + 0.06) * (1 - merge) + merge * 0.14;
-    const wristAngle = wristWave * 0.44 * (1 - merge) + merge * 0.06;
+    // As merge -> 1, morph smoothly from symmetric 3D flight into the swept-back Ngọc Lũ relief profile!
+    const profileMorph = THREE.MathUtils.smoothstep(merge, 0.05, 0.85);
+    const shoulderAngle = (downstroke * 0.52 + 0.06) * (1 - merge) + merge * 0.1;
+    const wristAngle = wristWave * 0.44 * (1 - merge) + merge * 0.04;
 
     if (leftShoulderRef.current) {
-      leftShoulderRef.current.rotation.z = shoulderAngle;
-      leftShoulderRef.current.rotation.y = -merge * 0.25;
+      // Radially inward wing tucks gracefully into the lower relief silhouette
+      leftShoulderRef.current.rotation.z = shoulderAngle * (1 - profileMorph * 0.5);
+      leftShoulderRef.current.rotation.y = -profileMorph * 0.72;
+      const inScale = 1 - profileMorph * 0.58;
+      leftShoulderRef.current.scale.set(inScale, 1, 1 - profileMorph * 0.25);
     }
     if (leftWristRef.current) {
       leftWristRef.current.rotation.z = wristAngle;
     }
     if (rightShoulderRef.current) {
+      // Radially outward wing sweeps back into the grand upswept Đông Sơn primary wing
       rightShoulderRef.current.rotation.z = shoulderAngle;
-      rightShoulderRef.current.rotation.y = -merge * 0.25;
+      rightShoulderRef.current.rotation.y = -profileMorph * 0.36;
+      const outScale = 1 - profileMorph * 0.22;
+      rightShoulderRef.current.scale.set(outScale, 1, 1);
     }
     if (rightWristRef.current) {
       rightWristRef.current.rotation.z = wristAngle;
@@ -544,9 +529,9 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       tailStreamerRightRef.current.rotation.y = -Math.sin(t * 6.0 + 0.8) * 0.075 * (1 - merge);
     }
 
-    // Transmute pearl-ivory into incandescent molten cast-gold & cross-fade seamlessly (`0.42 -> 0.94`)
+    // Transmute pearl-ivory into incandescent molten cast-gold & cross-fade seamlessly (`0.36 -> 0.88`)
     // right as Lead Bird #0 crystallizes underneath on the rotating Đông Sơn drum!
-    const meltT = THREE.MathUtils.clamp((merge - 0.42) / 0.52, 0, 1);
+    const meltT = THREE.MathUtils.clamp((merge - 0.36) / 0.52, 0, 1);
     const quinticMelt = meltT * meltT * meltT * (meltT * (meltT * 6 - 15) + 10);
     const stampHandoffFade = 1 - quinticMelt;
     const coreAlpha = enter * stampHandoffFade;

@@ -36,8 +36,27 @@ export function ScrollMotionController() {
     const getMaxScroll = () =>
       Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
 
+    const hasScrollableAncestor = (target: EventTarget | null, deltaY: number): boolean => {
+      let node = target instanceof HTMLElement ? target : null;
+      while (node && node !== document.body && node !== document.documentElement) {
+        if (node.hasAttribute("data-lenis-prevent")) return true;
+        const style = window.getComputedStyle(node);
+        const overflowY = style.overflowY;
+        if (
+          (overflowY === "auto" || overflowY === "scroll" || overflowY === "overlay") &&
+          node.scrollHeight > node.clientHeight + 1
+        ) {
+          if (deltaY > 0 && node.scrollTop + node.clientHeight < node.scrollHeight - 1) return true;
+          if (deltaY < 0 && node.scrollTop > 0) return true;
+        }
+        node = node.parentElement;
+      }
+      return false;
+    };
+
     const onWheel = (e: WheelEvent) => {
       if (!desktopFinePointer || e.ctrlKey || e.metaKey) return;
+      if (hasScrollableAncestor(e.target, e.deltaY)) return;
       e.preventDefault();
       if (!isWheelSmoothing) {
         currentY = window.scrollY;
@@ -48,6 +67,21 @@ export function ScrollMotionController() {
         e.deltaMode === 1 ? e.deltaY * 36 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY;
       targetY = Math.max(0, Math.min(getMaxScroll(), targetY + rawDelta * 0.92));
     };
+
+    // Immediately cancel wheel inertia & snap scroll state to 0 whenever Replay Intro is triggered!
+    let prevReplayCount = useIntroStore.getState().replayCount;
+    const unsubReplay = useIntroStore.subscribe((state) => {
+      if (state.replayCount !== prevReplayCount) {
+        prevReplayCount = state.replayCount;
+        isWheelSmoothing = false;
+        currentY = 0;
+        targetY = 0;
+        lastScrollY = 0;
+        smoothSkew = 0;
+        window.scrollTo({ top: 0, behavior: "instant" });
+        ScrollTrigger.update();
+      }
+    });
 
     const onNativeScroll = () => {
       // Sync target if user dragged scrollbar or used keyboard while wheel smoothing is idle
@@ -118,6 +152,7 @@ export function ScrollMotionController() {
     gsap.ticker.add(tick);
 
     return () => {
+      unsubReplay();
       if (desktopFinePointer) {
         window.removeEventListener("wheel", onWheel);
         document.removeEventListener("click", onAnchorClick);
@@ -130,60 +165,32 @@ export function ScrollMotionController() {
     };
   }, [reducedMotion]);
 
-  // 2. Section Reveals, Split-Line Masks, Bronze Curtains, Parallax & Molten Journey Spark
+  // 2. Per-Element Section Reveals, Optical Project Sheens, Parallax & Molten Journey Spark
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
     if (reducedMotion) {
       gsap.set("[data-scroll-reveal]", { autoAlpha: 1, y: 0 });
-      gsap.set("[data-split-line]", { yPercent: 0, autoAlpha: 1 });
       gsap.set("[data-bronze-sheen]", { autoAlpha: 0 });
       return;
     }
 
     const ctx = gsap.context(() => {
-      // A. Editorial Split-Line Mask Reveals on Major Headings
-      const splitHeadings = gsap.utils.toArray<HTMLElement>("[data-split-heading]");
-      splitHeadings.forEach((heading) => {
-        const lines = heading.querySelectorAll<HTMLElement>("[data-split-line]");
-        if (!lines.length) return;
+      // A. Individual Viewport-Triggered Editorial Element Entrances
+      //    (Each element triggers right as IT enters the viewport — never hidden behind a tall section stagger!)
+      const revealItems = gsap.utils.toArray<HTMLElement>("[data-scroll-reveal]");
+      revealItems.forEach((item) => {
         gsap.fromTo(
-          lines,
-          { yPercent: 112, rotateZ: 1.3, autoAlpha: 0 },
-          {
-            yPercent: 0,
-            rotateZ: 0,
-            autoAlpha: 1,
-            duration: 0.88,
-            stagger: 0.09,
-            ease: "power4.out",
-            scrollTrigger: {
-              trigger: heading,
-              start: "top 90%",
-              once: true,
-            },
-          }
-        );
-      });
-
-      // B. Snappy Editorial Element Entrances
-      const groups = gsap.utils.toArray<HTMLElement>("[data-scroll-section]");
-      groups.forEach((section) => {
-        const items = section.querySelectorAll<HTMLElement>("[data-scroll-reveal]");
-        if (!items.length) return;
-
-        gsap.fromTo(
-          items,
-          { autoAlpha: 0, y: 24 },
+          item,
+          { autoAlpha: 0, y: 22 },
           {
             autoAlpha: 1,
             y: 0,
-            duration: 0.65,
-            stagger: 0.055,
+            duration: 0.62,
             ease: "power3.out",
             scrollTrigger: {
-              trigger: section,
-              start: "top 89%",
+              trigger: item,
+              start: "top 92%",
               once: true,
             },
           }

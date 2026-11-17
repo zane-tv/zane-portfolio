@@ -101,11 +101,13 @@ export function DongSonCursor() {
       const amp = Math.min(2.4, strength * 1.8);
 
       window.cancelAnimationFrame(raf);
+      document.documentElement.classList.add("drum-shaking");
       const tick = (now: number) => {
         const elapsed = (now - start) / 1000;
         if (elapsed >= 0.32) {
           document.documentElement.style.setProperty("--drum-shake-x", "0px");
           document.documentElement.style.setProperty("--drum-shake-y", "0px");
+          document.documentElement.classList.remove("drum-shaking");
           return;
         }
         const decay = Math.exp(-elapsed * 14);
@@ -122,6 +124,7 @@ export function DongSonCursor() {
       window.cancelAnimationFrame(raf);
       document.documentElement.style.setProperty("--drum-shake-x", "0px");
       document.documentElement.style.setProperty("--drum-shake-y", "0px");
+      document.documentElement.classList.remove("drum-shaking");
       unsub();
     };
   }, [reducedMotion]);

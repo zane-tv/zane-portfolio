@@ -289,10 +289,10 @@ export function DrumRings() {
     resources.birdReliefGold.emissiveIntensity =
       0.34 + pulse * 0.85 + stampFlash * 0.85 + beatBoost * 0.65;
 
-    const leadCrystallize = THREE.MathUtils.smoothstep(merge, 0.32, 0.9);
+    const leadCrystallize = THREE.MathUtils.smoothstep(merge, 0.26, 0.84);
     resources.leadBirdGoldMat.opacity = leadCrystallize * 0.98;
     resources.leadBirdGoldMat.emissiveIntensity =
-      0.38 + (1 - leadCrystallize) * 2.3 + stampFlash * 1.25 + pulse * 0.85 + beatBoost * 0.75;
+      0.38 + (1 - leadCrystallize) * 1.65 + stampFlash * 0.95 + pulse * 0.65 + beatBoost * 0.55;
 
     if (leadBirdMeshRef.current) {
       const crownScale = THREE.MathUtils.lerp(1.22, 1.1, leadCrystallize);

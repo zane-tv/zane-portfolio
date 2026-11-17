@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Canvas } from "@react-three/fiber";
+import clsx from "clsx";
 import * as THREE from "three";
 import { snapIntroMotionChannelsToIdle, useIntroStore } from "@/store/introStore";
 import { HERO_CAMERA_FOV, HERO_CAMERA_Z } from "./CameraRig";
@@ -28,6 +29,7 @@ export function ExperienceCanvas() {
   const webglContextLost = useIntroStore((s) => s.webglContextLost);
   const heroInView = useIntroStore((s) => s.heroInView);
   const setWebglSupported = useIntroStore((s) => s.setWebglSupported);
+  const setWebglReady = useIntroStore((s) => s.setWebglReady);
   const setWebglContextLost = useIntroStore((s) => s.setWebglContextLost);
   const setPhase = useIntroStore((s) => s.setPhase);
 
@@ -39,20 +41,26 @@ export function ExperienceCanvas() {
       setPhase("idle");
     }
     setMounted(true);
-  }, [setPhase, setWebglSupported]);
+    return () => {
+      setWebglReady(false);
+    };
+  }, [setPhase, setWebglReady, setWebglSupported]);
 
-  if (!mounted || !webglSupported || webglContextLost) {
+  if (!mounted || !webglSupported) {
     return null;
   }
 
   return (
     <div
-      className="pointer-events-none absolute inset-0 z-10 overflow-hidden"
+      className={clsx(
+        "pointer-events-none absolute inset-0 z-10 overflow-hidden transition-opacity duration-300",
+        webglContextLost ? "opacity-0" : "opacity-100"
+      )}
       aria-hidden="true"
     >
       <Canvas
         dpr={isMobile ? [1, 1.25] : [1, 1.5]}
-        frameloop={heroInView ? "always" : "never"}
+        frameloop={heroInView && !webglContextLost ? "always" : "never"}
         camera={{
           fov: HERO_CAMERA_FOV,
           near: 0.1,
@@ -67,6 +75,7 @@ export function ExperienceCanvas() {
           toneMappingExposure: 1.08,
         }}
         onCreated={({ gl }) => {
+          setWebglReady(true);
           const dom = gl.domElement;
           const handleLost = (e: Event) => {
             e.preventDefault();

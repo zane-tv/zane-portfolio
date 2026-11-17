@@ -13,6 +13,9 @@ export interface UiDictionary {
     editionLabel: string;
     skipToMain: string;
     langSwitchAria: string;
+    primaryNavAria: string;
+    mobileNavAria: string;
+    toggleMenuAria: string;
   };
   hero: {
     skipIntro: string;
@@ -58,7 +61,9 @@ export interface UiDictionary {
     contributionSingular: string;
     contributionPlural: string;
     languageTitle: string;
+    otherLanguageLabel: string;
     recentActivityTitle: string;
+    dialSvgAria: string;
   };
   journeyUi: {
     educationEyebrow: string;
@@ -80,6 +85,16 @@ export interface UiDictionary {
   compassUi: {
     meridianLabel: string;
     strikeTooltip: string;
+    asideAria: string;
+    jumpPrefix: string;
+    anchors: {
+      hero: string;
+      disciplines: string;
+      artifacts: string;
+      telemetry: string;
+      journey: string;
+      horizon: string;
+    };
   };
 }
 
@@ -452,7 +467,10 @@ const uiDictionaries: Record<Locale, UiDictionary> = {
       replayIntro: "Xem Lại Intro",
       editionLabel: "TP.HCM · ĐÔNG SƠN EDITION",
       skipToMain: "Chuyển tới nội dung chính",
-      langSwitchAria: "Chuyển ngôn ngữ sang Tiếng Anh",
+      langSwitchAria: "Chuyển đổi ngôn ngữ",
+      primaryNavAria: "Điều hướng chính",
+      mobileNavAria: "Điều hướng di động",
+      toggleMenuAria: "Đóng mở menu điều hướng",
     },
     hero: {
       skipIntro: "Bỏ qua Intro",
@@ -510,7 +528,9 @@ const uiDictionaries: Record<Locale, UiDictionary> = {
       contributionSingular: "đóng góp",
       contributionPlural: "đóng góp",
       languageTitle: "Tỷ Trọng Ngôn Ngữ Lập Trình",
+      otherLanguageLabel: "Khác",
       recentActivityTitle: "Nhật Ký Hoạt Động Gần Đây",
+      dialSvgAria: "Biểu đồ mặt trống đồng Đông Sơn 52 tuần đóng góp GitHub",
     },
     journeyUi: {
       educationEyebrow: "HỌC VẤN & ĐÀO TẠO CHÍNH QUY",
@@ -532,6 +552,16 @@ const uiDictionaries: Record<Locale, UiDictionary> = {
     compassUi: {
       meridianLabel: "KINH TUYẾN NGỌC LŨ",
       strikeTooltip: "Gõ Trống Đồng — Lan tỏa hào quang toàn trang",
+      asideAria: "La bàn cuộn trang và nút gõ trống đồng",
+      jumpPrefix: "Đi tới",
+      anchors: {
+        hero: "01 · Mở Đầu",
+        disciplines: "02 · Ngũ Hành",
+        artifacts: "03 · Tác Phẩm",
+        telemetry: "04 · Thống Kê",
+        journey: "05 · Hành Trình",
+        horizon: "06 · Chân Trời",
+      },
     },
   },
   en: {
@@ -544,7 +574,10 @@ const uiDictionaries: Record<Locale, UiDictionary> = {
       replayIntro: "Replay Intro",
       editionLabel: "HCMC · ĐÔNG SƠN EDITION",
       skipToMain: "Skip to main portfolio sections",
-      langSwitchAria: "Switch language to Vietnamese",
+      langSwitchAria: "Language switcher",
+      primaryNavAria: "Primary navigation",
+      mobileNavAria: "Mobile navigation",
+      toggleMenuAria: "Toggle navigation menu",
     },
     hero: {
       skipIntro: "Skip Intro",
@@ -602,7 +635,10 @@ const uiDictionaries: Record<Locale, UiDictionary> = {
       contributionSingular: "contribution",
       contributionPlural: "contributions",
       languageTitle: "Language Distribution",
+      otherLanguageLabel: "Other",
       recentActivityTitle: "Recent Activity Log",
+      dialSvgAria:
+        "52-week radial GitHub contribution visualization surrounding an authentic Ngọc Lũ Đông Sơn bronze drum motif",
     },
     journeyUi: {
       educationEyebrow: "ACADEMIC LINEAGE",
@@ -624,6 +660,16 @@ const uiDictionaries: Record<Locale, UiDictionary> = {
     compassUi: {
       meridianLabel: "NGỌC LŨ MERIDIAN",
       strikeTooltip: "Strike Đông Sơn Drum — Radiate Full-Page Aura",
+      asideAria: "Meridian scroll compass and interactive drum strike",
+      jumpPrefix: "Jump to",
+      anchors: {
+        hero: "01 · Hero",
+        disciplines: "02 · Disciplines",
+        artifacts: "03 · Artifacts",
+        telemetry: "04 · Telemetry",
+        journey: "05 · Journey",
+        horizon: "06 · Horizon",
+      },
     },
   },
 };

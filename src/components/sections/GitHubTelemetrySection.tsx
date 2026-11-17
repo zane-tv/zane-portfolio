@@ -12,6 +12,7 @@ import {
   buildTangentChainSvg,
   LacBirdGlyph,
 } from "@/components/ui/DongSonMotifs";
+import { SplitHeading } from "@/components/ui/SplitHeading";
 
 function polar(cx: number, cy: number, r: number, deg: number): [number, number] {
   const rad = ((deg - 90) * Math.PI) / 180;
@@ -135,16 +136,11 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
             >
               {tUi.eyebrow}
             </p>
-            <h2
+            <SplitHeading
               id="telemetry-heading"
-              data-split-heading
-              data-velocity-skew
-              className="overflow-hidden font-display text-[clamp(2.4rem,5vw,4.25rem)] leading-[1.05] font-medium tracking-[-0.02em] text-[var(--color-ink)] will-change-transform"
-            >
-              <span data-split-line className="block">
-                {tUi.heading}
-              </span>
-            </h2>
+              text={tUi.heading}
+              className="font-display text-[clamp(2.4rem,5vw,4.25rem)] leading-[1.05] font-medium tracking-[-0.02em] text-[var(--color-ink)]"
+            />
           </div>
 
           <div
@@ -163,16 +159,16 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
           </div>
         </div>
 
-        {/* Key Numbers Strip */}
+        {/* Key Numbers Strip (Stable IDs preserve ScrollTrigger & count-up across EN <-> VI switches) */}
         <div className="drum-reactive-card mb-10 grid grid-cols-2 gap-px border border-[var(--border-hairline-strong)] bg-[var(--border-hairline)] lg:grid-cols-4">
           {[
-            { label: tUi.stats.publicRepos, value: data.metrics.publicRepos, accent: "text-[var(--color-ink)]" },
-            { label: tUi.stats.starsEarned, value: data.metrics.totalStars, accent: "text-[var(--color-bronze-bright)]" },
-            { label: tUi.stats.repoForks, value: data.metrics.totalForks, accent: "text-[var(--color-ink)]" },
-            { label: tUi.stats.weeklyActivity, value: data.metrics.totalContributions, accent: "text-[var(--color-patina)]" },
+            { id: "repos", label: tUi.stats.publicRepos, value: data.metrics.publicRepos, accent: "text-[var(--color-ink)]" },
+            { id: "stars", label: tUi.stats.starsEarned, value: data.metrics.totalStars, accent: "text-[var(--color-bronze-bright)]" },
+            { id: "forks", label: tUi.stats.repoForks, value: data.metrics.totalForks, accent: "text-[var(--color-ink)]" },
+            { id: "activity", label: tUi.stats.weeklyActivity, value: data.metrics.totalContributions, accent: "text-[var(--color-patina)]" },
           ].map((stat) => (
             <div
-              key={stat.label}
+              key={stat.id}
               data-scroll-reveal
               className="bg-[rgba(11,14,17,0.9)] p-6 sm:p-8"
             >
@@ -211,7 +207,7 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
                 viewBox="0 0 420 420"
                 className="h-auto w-full select-none"
                 role="img"
-                aria-label="52-week radial GitHub contribution visualization surrounding an authentic Ngọc Lũ Đông Sơn bronze drum motif"
+                aria-label={tUi.dialSvgAria}
               >
                 <defs>
                   <linearGradient id="sunToWeekRay" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -466,7 +462,7 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
                         className="h-2.5 w-2.5 rounded-full"
                         style={{ backgroundColor: lang.color }}
                       />
-                      {lang.name}
+                      {lang.name === "Other" ? tUi.otherLanguageLabel : lang.name}
                     </span>
                     <span className="text-[var(--color-ink-muted)]">{lang.percentage}%</span>
                   </li>

@@ -42,6 +42,8 @@ export function IntroTimeline({
   const skipSignal = useIntroStore((s) => s.skipSignal);
   const replayCount = useIntroStore((s) => s.replayCount);
   const webglSupported = useIntroStore((s) => s.webglSupported);
+  const webglReady = useIntroStore((s) => s.webglReady);
+  const webglContextLost = useIntroStore((s) => s.webglContextLost);
 
   const emitPhase = useCallback(
     (next: IntroPhase) => {
@@ -96,7 +98,7 @@ export function IntroTimeline({
     const syncDomLayers = () => {
       const wrap = portraitDomWrapRef.current;
       if (wrap) {
-        const alpha = webglSupported ? introMotionState.domHandoffAlpha : 1;
+        const alpha = webglSupported && !webglContextLost ? introMotionState.domHandoffAlpha : 1;
         wrap.style.opacity = alpha.toFixed(3);
         wrap.style.transform = `perspective(900px) rotateY(${(
           introMotionState.pointerSmoothX * 3.4
@@ -107,7 +109,7 @@ export function IntroTimeline({
     return () => {
       gsap.ticker.remove(syncDomLayers);
     };
-  }, [portraitDomWrapRef, webglSupported]);
+  }, [portraitDomWrapRef, webglContextLost, webglSupported]);
 
   useEffect(() => {
     const heroEl = heroSectionRef.current;
@@ -166,7 +168,7 @@ export function IntroTimeline({
     const revealItems = heroEl.querySelectorAll<HTMLElement>("[data-hero-reveal]");
     tlRef.current?.kill();
 
-    if ((prefersReduced && replayCount === 0) || !webglSupported) {
+    if ((prefersReduced && replayCount === 0) || !webglSupported || webglContextLost) {
       snapIntroMotionChannelsToIdle();
       gsap.set(revealItems, { autoAlpha: 1, y: 0, clipPath: "inset(0% 0% 0% 0%)" });
       emitPhase("idle");
@@ -181,6 +183,18 @@ export function IntroTimeline({
       y: 28,
       clipPath: "inset(0% 0% 100% 0%)",
     });
+
+    // Wait for dynamic WebGL `<Canvas>` chunk to finish initializing so Act I never plays behind a loading screen
+    if (!webglReady) {
+      const chunkTimeout = window.setTimeout(() => {
+        if (!useIntroStore.getState().webglReady) {
+          snapIntroMotionChannelsToIdle();
+          gsap.set(revealItems, { autoAlpha: 1, y: 0, clipPath: "inset(0% 0% 0% 0%)" });
+          emitPhase("idle");
+        }
+      }, 2800);
+      return () => window.clearTimeout(chunkTimeout);
+    }
 
     const isMobile = window.innerWidth < 768;
 
@@ -376,7 +390,16 @@ export function IntroTimeline({
       window.clearTimeout(safetyTimer);
       tl.kill();
     };
-  }, [emitPhase, heroSectionRef, measureTargets, replayCount, setReducedMotion, webglSupported]);
+  }, [
+    emitPhase,
+    heroSectionRef,
+    measureTargets,
+    replayCount,
+    setReducedMotion,
+    webglContextLost,
+    webglReady,
+    webglSupported,
+  ]);
 
   useEffect(() => {
     if (skipSignal === 0) return;

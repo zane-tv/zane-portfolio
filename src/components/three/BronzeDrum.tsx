@@ -105,6 +105,7 @@ export function BronzeDrum() {
         uStampOrigin: { value: new THREE.Vector2(0, 1.31) },
         uGlobalBeatWave: { value: 0 },
         uGlobalBeatStrength: { value: 0 },
+        uHaloMorph: { value: 0 },
         uReveal: { value: 0 },
       },
       vertexShader: /* glsl */ `
@@ -120,12 +121,16 @@ export function BronzeDrum() {
         uniform vec2 uStampOrigin;
         uniform float uGlobalBeatWave;
         uniform float uGlobalBeatStrength;
+        uniform float uHaloMorph;
         uniform float uReveal;
         varying vec2 vUv;
 
         void main() {
           vec2 p = vUv * 1.9;
           float r = length(p);
+
+          // Keep central portrait disc 100% free of additive bronze wash once portrait reveals!
+          float portraitClear = mix(1.0, smoothstep(0.975, 1.015, r), uHaloMorph);
 
           // 1) Golden impact shockwave erupting from live Bird Slot #0 coordinates
           float distFromMergedBird = length(p - uStampOrigin);
@@ -138,20 +143,20 @@ export function BronzeDrum() {
           float waveCenter = uPulse * 1.62;
           float band = exp(-pow((r - waveCenter) / 0.08, 2.0)) * sin(uPulse * 3.14159);
 
-          // 3) Synchronized Ceremonial Drum-Beat Ripple
+          // 3) Synchronized Ceremonial Drum-Beat Ripple (balanced so Chim Lạc gold stays rich, never blown-out white)
           float beatR = 1.01 + uGlobalBeatWave * 0.72;
-          float beatBand = exp(-pow((r - beatR) / 0.065, 2.0)) * sin(uGlobalBeatWave * 3.14159) * uGlobalBeatStrength * 0.7;
+          float beatBand = exp(-pow((r - beatR) / 0.065, 2.0)) * sin(uGlobalBeatWave * 3.14159) * uGlobalBeatStrength * 0.42;
           float patinaEchoR = 1.01 + max(0.0, uGlobalBeatWave - 0.12) * 0.65;
-          float patinaEcho = exp(-pow((r - patinaEchoR) / 0.05, 2.0)) * sin(uGlobalBeatWave * 3.14159) * uGlobalBeatStrength * 0.42;
+          float patinaEcho = exp(-pow((r - patinaEchoR) / 0.05, 2.0)) * sin(uGlobalBeatWave * 3.14159) * uGlobalBeatStrength * 0.28;
 
           // 4) Subtle golden bezel aura around portrait rim
-          float rimGlow = exp(-pow((r - 1.02) / 0.055, 2.0)) * (0.14 + uGlobalBeatStrength * sin(uGlobalBeatWave * 3.14159) * 0.22) * uReveal;
+          float rimGlow = exp(-pow((r - 1.02) / 0.05, 2.0)) * (0.1 + uGlobalBeatStrength * sin(uGlobalBeatWave * 3.14159) * 0.16) * uReveal;
 
-          float goldTotal = (stampRing * 0.95 + stampFlash * 0.9) * drumMask + band * 0.75 + beatBand + rimGlow;
-          float alpha = clamp(goldTotal + patinaEcho, 0.0, 1.0);
-          vec3 goldCol = mix(vec3(0.86, 0.64, 0.38), vec3(1.0, 0.95, 0.82), clamp(stampRing + stampFlash + band + beatBand, 0.0, 1.0));
+          float goldTotal = ((stampRing * 0.85 + stampFlash * 0.8) * drumMask + band * 0.65 + beatBand + rimGlow) * portraitClear;
+          float alpha = clamp(goldTotal + patinaEcho * portraitClear, 0.0, 0.85);
+          vec3 goldCol = mix(vec3(0.84, 0.61, 0.35), vec3(0.98, 0.90, 0.74), clamp(stampRing + stampFlash + band + beatBand, 0.0, 1.0));
           vec3 patinaCol = vec3(0.45, 0.78, 0.68);
-          vec3 col = mix(goldCol, patinaCol, clamp(patinaEcho / max(0.001, alpha), 0.0, 0.65));
+          vec3 col = mix(goldCol, patinaCol, clamp((patinaEcho * portraitClear) / max(0.001, alpha), 0.0, 0.65));
           gl_FragColor = vec4(col, alpha);
         }
       `,
@@ -227,6 +232,7 @@ export function BronzeDrum() {
     resources.pulseShaderMat.uniforms.uStampWave!.value = introMotionState.craneStampShockwave;
     resources.pulseShaderMat.uniforms.uGlobalBeatWave!.value = beatWave;
     resources.pulseShaderMat.uniforms.uGlobalBeatStrength!.value = beatStrength;
+    resources.pulseShaderMat.uniforms.uHaloMorph!.value = haloMorph;
     resources.pulseShaderMat.uniforms.uReveal!.value = reveal;
   });
 
@@ -250,11 +256,11 @@ export function BronzeDrum() {
       {/* Refined Ngọc Lũ Ornamental Bands (Zero heavy outer rims or handles!) */}
       <DrumRings />
 
-      {/* Resonant Strike Shockwave Layer */}
+      {/* Resonant Strike Shockwave Layer (Behind PortraitReveal at z = 0.022 so portrait colors stay pure!) */}
       <mesh
         geometry={resources.pulsePlaneGeom}
         material={resources.pulseShaderMat}
-        position={[0, 0, 0.028]}
+        position={[0, 0, 0.018]}
       />
     </group>
   );

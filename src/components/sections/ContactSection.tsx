@@ -9,6 +9,7 @@ import {
   buildPeacockWedgesPath,
   buildSunPolygonPoints,
 } from "@/components/ui/DongSonMotifs";
+import { SplitHeading } from "@/components/ui/SplitHeading";
 
 /**
  * Animated Soaring Chim Lạc SVG with active upper/lower wingbeat & organic horizon glide!
@@ -318,16 +319,11 @@ export function ContactSection() {
             {contact.eyebrow}
           </p>
 
-          <h2
+          <SplitHeading
             id="contact-heading"
-            data-split-heading
-            data-velocity-skew
-            className="mt-4 overflow-hidden font-display text-[clamp(2.8rem,6.5vw,5.4rem)] leading-[1.02] font-medium tracking-[-0.025em] text-[var(--color-ink)] will-change-transform"
-          >
-            <span data-split-line className="block">
-              {contact.headline}
-            </span>
-          </h2>
+            text={contact.headline}
+            className="mt-4 font-display text-[clamp(2.8rem,6.5vw,5.4rem)] leading-[1.02] font-medium tracking-[-0.025em] text-[var(--color-ink)]"
+          />
 
           <p
             data-scroll-reveal

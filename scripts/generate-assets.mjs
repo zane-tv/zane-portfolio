@@ -799,53 +799,73 @@ async function generateTexturesAndMeta() {
   </svg>`;
   await fs.writeFile(path.join(ROOT, "src/app/icon.svg"), iconSvg, "utf8");
 
-  // Sleek Đông Sơn × Future Tech Faceted Cyber-Spearhead Hardware Cursors (1x 32px & 2x 64px Retina)
+  // Sleek Đông Sơn × Future Tech Faceted Cyber-Spearhead Hardware Cursors (1x 32px & 2x 64px Retina — Zero Bird!)
   const buildCursorSvg = (isHover) => `
   <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
     <defs>
       <linearGradient id="litFacet" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${isHover ? "#e8fff7" : "#fff6e0"}"/>
-        <stop offset="50%" stop-color="${isHover ? "#73c3a9" : "#e7b980"}"/>
-        <stop offset="100%" stop-color="${isHover ? "#3b8f77" : "#b87b38"}"/>
+        <stop offset="0%" stop-color="${isHover ? "#f0fff9" : "#fff9ea"}"/>
+        <stop offset="46%" stop-color="${isHover ? "#73c3a9" : "#efc68c"}"/>
+        <stop offset="100%" stop-color="${isHover ? "#3b8f77" : "#a86d2a"}"/>
       </linearGradient>
-      <linearGradient id="darkFacet" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="${isHover ? "#162928" : "#1c222c"}"/>
-        <stop offset="100%" stop-color="#090c10"/>
+      <linearGradient id="cyberFacet" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${isHover ? "#23433d" : "#2e2419"}"/>
+        <stop offset="100%" stop-color="#0e141c"/>
       </linearGradient>
-      <filter id="cursorShadow" x="-20%" y="-20%" width="150%" height="150%">
-        <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.72"/>
+      <filter id="cursorShadow" x="-25%" y="-25%" width="160%" height="160%">
+        <feDropShadow dx="1" dy="2" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.82"/>
       </filter>
     </defs>
 
     <g filter="url(#cursorShadow)">
-      <!-- Left Sunlit Metallic Gold / Patina Facet (Tip at exact 6, 6 -> 3, 3 in 1x!) -->
+      <!-- Precision Outer Obsidian Halo Rim for 100% Contrast on Both Light & Dark Surfaces -->
       <polygon
-        points="6,6 22,50 28,33"
-        fill="url(#litFacet)"
+        points="6,6 21,51 29,34 51,21"
+        fill="#070a0e"
         stroke="#070a0e"
-        stroke-width="1.6"
+        stroke-width="3.2"
         stroke-linejoin="round"
       />
-      <!-- Right Obsidian-Bronze Cyber Facet -->
+      <!-- Left Sunlit Burnished Bronze / Patina Facet (Tip at exact 6,6 -> 3,3 in 1x!) -->
       <polygon
-        points="6,6 28,33 50,22"
-        fill="url(#darkFacet)"
+        points="6,6 21,50 28.5,33.5"
+        fill="url(#litFacet)"
+        stroke="${isHover ? "#d6fff1" : "#fff3d6"}"
+        stroke-width="1.2"
+        stroke-linejoin="round"
+      />
+      <!-- Right Chiseled Cyber-Bronze / Emerald Facet -->
+      <polygon
+        points="6,6 28.5,33.5 50,21"
+        fill="url(#cyberFacet)"
         stroke="${isHover ? "#73c3a9" : "#e7b980"}"
-        stroke-width="1.5"
+        stroke-width="1.9"
         stroke-linejoin="round"
       />
-      <!-- Central Spine Ridge -->
-      <line x1="7" y1="7" x2="28" y2="33" stroke="#fff8e8" stroke-width="1.4" stroke-linecap="round"/>
-      <!-- Engraved Đông Sơn Lozenge Energy Core -->
+      <!-- Engraved Đông Sơn Inner Chevron Linework -->
+      <polyline
+        points="15,28 24,25 28,16"
+        fill="none"
+        stroke="${isHover ? "#73c3a9" : "#e7b980"}"
+        stroke-opacity="0.85"
+        stroke-width="1.25"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <!-- Central Luminous Ridge Spine -->
+      <line x1="6.8" y1="6.8" x2="28.5" y2="33.5" stroke="#fffaf0" stroke-width="1.65" stroke-linecap="round"/>
+      <!-- Glowing Đông Sơn Lozenge Energy Core -->
       <polygon
-        points="16,18 22,21 25,27 19,24"
+        points="16,17 22.5,20 25.5,26.5 19,23.5"
         fill="${isHover ? "#fff6e0" : "#73c3a9"}"
       />
-      <!-- Trailing Cyber Tail Notch -->
+      <!-- Floating Precision Pommel Diamond -->
       <polygon
-        points="28,33 33,39 39,33 34,28"
-        fill="${isHover ? "#e7b980" : "#73c3a9"}"
-        fill-opacity="0.9"
+        points="30,35 35.5,36.5 37,42 31.5,40.5"
+        fill="${isHover ? "#efc68c" : "#73c3a9"}"
+        stroke="#070a0e"
+        stroke-width="1.1"
+        stroke-linejoin="round"
       />
     </g>
   </svg>`;

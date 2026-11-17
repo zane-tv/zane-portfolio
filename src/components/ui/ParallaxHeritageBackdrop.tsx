@@ -38,13 +38,13 @@ interface EmberParticle {
   alpha: number;
 }
 
-const SECTION_ANCHORS = [
-  { href: "#top", label: "01 · Hero" },
-  { href: "#expertise", label: "02 · Disciplines" },
-  { href: "#projects", label: "03 · Artifacts" },
-  { href: "#telemetry", label: "04 · Telemetry" },
-  { href: "#journey", label: "05 · Journey" },
-  { href: "#contact", label: "06 · Horizon" },
+const SECTION_ANCHOR_KEYS = [
+  { href: "#top", key: "hero" },
+  { href: "#expertise", key: "disciplines" },
+  { href: "#projects", key: "artifacts" },
+  { href: "#telemetry", key: "telemetry" },
+  { href: "#journey", key: "journey" },
+  { href: "#contact", key: "horizon" },
 ] as const;
 
 /** Pre-bakes a soft glowing orb sprite once at mount so particles use fast GPU texture blits */
@@ -95,7 +95,7 @@ function createFairyStarSprite(coreColor: string, glowColor: string): HTMLCanvas
  * GPU-Optimized Heritage × Future Background & Unified Full-Page Aura + Fairy-Dust Engine:
  * - Zero `filter: blur()` on animated fullscreen aurora layers (uses native smooth radial gradients).
  * - Single `dpr = 1` 2D `<canvas>` rendering Drum-Beat Shockwave Auras, Rising Embers, AND
- *   Chim Lạc Cursor Fairy Dust (`bụi tiên`) via pre-baked offscreen sprite stamps (`drawImage`)!
+ *   Cursor Fairy Dust (`bụi tiên`) via pre-baked offscreen sprite stamps (`drawImage`)!
  * - Automatically pauses when browser tab is hidden to keep idle GPU load minimal.
  */
 export function ParallaxHeritageBackdrop() {
@@ -370,7 +370,7 @@ export function ParallaxHeritageBackdrop() {
           ctx.drawImage(e.isPatina ? patinaOrb : goldOrb, drawX - sz * 0.5, e.y - sz * 0.5, sz, sz);
         }
 
-        // 3) Chim Lạc Cursor Fairy Dust (`bụi tiên`) via Fast 4-Point Star Sprite Blits!
+        // 3) Cursor Fairy Dust (`bụi tiên`) via Fast 4-Point Star Sprite Blits!
         for (let i = 0; i < MAX_FAIRY_DUST; i++) {
           const fp = fairyDustPool[i]!;
           if (fp.age >= fp.life) continue;
@@ -436,22 +436,22 @@ export function ParallaxHeritageBackdrop() {
         className="pointer-events-none fixed inset-0 z-0 overflow-hidden select-none"
       >
         {/* Smooth Radial Gradients WITHOUT expensive CSS `filter: blur(64px)`! */}
-        <div className="animate-aurora-drift absolute -top-[22vh] -left-[16vw] h-[84vh] w-[72vw] bg-[radial-gradient(closest-side,rgba(210,154,92,0.145)_0%,rgba(153,96,31,0.055)_48%,transparent_100%)] will-change-transform" />
-        <div className="animate-aurora-drift-reverse absolute top-[26vh] -right-[18vw] h-[86vh] w-[68vw] bg-[radial-gradient(closest-side,rgba(115,195,169,0.125)_0%,rgba(210,154,92,0.04)_52%,transparent_100%)] will-change-transform" />
-        <div className="absolute -bottom-[24vh] left-[18vw] h-[64vh] w-[64vw] bg-[radial-gradient(closest-side,rgba(210,154,92,0.11)_0%,transparent_100%)]" />
+        <div className="animate-aurora-drift absolute -top-[20vh] -left-[14vw] h-[86vh] w-[74vw] bg-[radial-gradient(50%_50%_at_50%_50%,rgba(210,154,92,0.175)_0%,rgba(153,96,31,0.065)_45%,rgba(153,96,31,0.015)_74%,transparent_98%)] will-change-transform" />
+        <div className="animate-aurora-drift-reverse absolute top-[24vh] -right-[16vw] h-[88vh] w-[70vw] bg-[radial-gradient(50%_50%_at_50%_50%,rgba(115,195,169,0.15)_0%,rgba(210,154,92,0.048)_48%,rgba(115,195,169,0.012)_75%,transparent_98%)] will-change-transform" />
+        <div className="absolute -bottom-[22vh] left-[16vw] h-[66vh] w-[66vw] bg-[radial-gradient(50%_50%_at_50%_50%,rgba(210,154,92,0.13)_0%,rgba(210,154,92,0.025)_65%,transparent_98%)]" />
 
         {/* Architectural Museum Meridian Grid Lines */}
         <div className="editorial-container relative h-full">
-          <div className="absolute inset-y-0 left-[var(--space-container-x)] w-[1px] bg-gradient-to-b from-transparent via-[rgba(210,154,92,0.12)] to-transparent" />
-          <div className="absolute inset-y-0 left-1/2 hidden w-[1px] bg-gradient-to-b from-transparent via-[rgba(236,230,219,0.05)] to-transparent lg:block" />
-          <div className="absolute inset-y-0 right-[var(--space-container-x)] w-[1px] bg-gradient-to-b from-transparent via-[rgba(115,195,169,0.11)] to-transparent" />
+          <div className="absolute inset-y-0 left-[var(--space-container-x)] w-[1px] bg-gradient-to-b from-transparent via-[rgba(210,154,92,0.15)] to-transparent" />
+          <div className="absolute inset-y-0 left-1/2 hidden w-[1px] bg-gradient-to-b from-transparent via-[rgba(236,230,219,0.055)] to-transparent lg:block" />
+          <div className="absolute inset-y-0 right-[var(--space-container-x)] w-[1px] bg-gradient-to-b from-transparent via-[rgba(115,195,169,0.135)] to-transparent" />
         </div>
 
         {/* Avatar-Inspired 45° Golden Cyber-Heritage Circuit Constellations */}
         <svg
           viewBox="0 0 640 320"
           fill="none"
-          className="absolute top-6 right-0 hidden h-[270px] w-[540px] opacity-45 md:block"
+          className="absolute top-6 right-0 hidden h-[270px] w-[540px] opacity-55 md:block"
         >
           <path
             d="M 110 210 L 185 135 L 285 135 L 350 70 L 520 70 L 575 15"
@@ -488,7 +488,7 @@ export function ParallaxHeritageBackdrop() {
         <svg
           viewBox="0 0 640 300"
           fill="none"
-          className="absolute bottom-8 left-0 hidden h-[240px] w-[500px] opacity-40 md:block"
+          className="absolute bottom-8 left-0 hidden h-[240px] w-[500px] opacity-50 md:block"
         >
           <path
             d="M 10 265 L 95 180 L 235 180 L 305 110 L 465 110"
@@ -518,7 +518,7 @@ export function ParallaxHeritageBackdrop() {
         {/* Left Rotating Ngọc Lũ Đông Sơn Drum Medallion */}
         <div
           data-scroll-rotate="1"
-          className="absolute top-[22vh] -left-[220px] h-[600px] w-[600px] opacity-[0.16] will-change-transform"
+          className="absolute top-[22vh] -left-[220px] h-[600px] w-[600px] opacity-[0.2] will-change-transform"
         >
           <svg viewBox="0 0 400 400" fill="none" stroke="var(--color-bronze)" className="h-full w-full">
             <circle cx="200" cy="200" r="194" strokeWidth="1.2" />
@@ -539,7 +539,7 @@ export function ParallaxHeritageBackdrop() {
         {/* Right Counter-Rotating Emerald-Patina & Bronze Medallion */}
         <div
           data-scroll-rotate="-1"
-          className="absolute bottom-[8vh] -right-[240px] h-[650px] w-[650px] opacity-[0.14] will-change-transform"
+          className="absolute bottom-[8vh] -right-[240px] h-[650px] w-[650px] opacity-[0.17] will-change-transform"
         >
           <svg viewBox="0 0 400 400" fill="none" stroke="var(--color-patina)" className="h-full w-full">
             <circle cx="200" cy="200" r="194" strokeDasharray="2 7" strokeWidth="1.2" />
@@ -569,7 +569,7 @@ export function ParallaxHeritageBackdrop() {
 
       {/* LAYER 3: Interactive Right-Margin Đông Sơn Meridian Compass & Drum Strike Trigger */}
       <aside
-        aria-label="Meridian scroll compass and interactive drum strike"
+        aria-label={ui.compassUi.asideAria}
         className={`fixed top-1/2 right-4 z-40 hidden -translate-y-1/2 flex-col items-center gap-2.5 transition-opacity duration-700 xl:flex ${
           isIntroComplete ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
@@ -579,17 +579,20 @@ export function ParallaxHeritageBackdrop() {
         </span>
 
         <div className="flex flex-col items-center gap-1.5 py-1">
-          {SECTION_ANCHORS.map((sec) => (
-            <a
-              key={sec.href}
-              href={sec.href}
-              title={sec.label}
-              aria-label={`Jump to ${sec.label}`}
-              className="group flex h-3 w-3 items-center justify-center"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--border-hairline-strong)] transition-all group-hover:scale-150 group-hover:bg-[var(--color-bronze-bright)]" />
-            </a>
-          ))}
+          {SECTION_ANCHOR_KEYS.map((sec) => {
+            const label = ui.compassUi.anchors[sec.key];
+            return (
+              <a
+                key={sec.href}
+                href={sec.href}
+                title={label}
+                aria-label={`${ui.compassUi.jumpPrefix} ${label}`}
+                className="group flex h-3 w-3 items-center justify-center"
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--border-hairline-strong)] transition-all group-hover:scale-150 group-hover:bg-[var(--color-bronze-bright)]" />
+              </a>
+            );
+          })}
         </div>
 
         <button

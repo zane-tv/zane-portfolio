@@ -40,7 +40,7 @@ export function CameraRig() {
     // Heroic push-in toward 12-o'clock Bird Slot #0 as Chim Lạc stamps into the drum!
     const mergeFocus = Math.sin(merge * Math.PI) * (1 - portraitLock);
     const mergeSpotY =
-      (introMotionState.startWorldY + 0.64 * introMotionState.startWorldRadius) * mergeFocus;
+      (introMotionState.startWorldY + 0.42 * introMotionState.startWorldRadius) * mergeFocus;
 
     // Tight, damped cinema camera impulse shake when Chim Lạc slams into Bird Slot #0
     const impactActive = stampWave > 0.002 && stampWave < 0.55 ? 1 : 0;
@@ -48,13 +48,13 @@ export function CameraRig() {
     const shakeX = Math.sin(stampWave * 68.0) * 0.042 * impactDecay;
     const shakeY = Math.cos(stampWave * 82.0) * 0.036 * impactDecay;
 
-    const camX = (-1.18 * lateralSweep + 0.34 * mergeFocus) * (1 - portraitLock) + shakeX;
-    const camY = (-0.28 * lateralSweep + mergeSpotY * 0.72) * (1 - portraitLock) + shakeY;
+    const camX = (-0.92 * lateralSweep + 0.24 * mergeFocus) * (1 - portraitLock) + shakeX;
+    const camY = (-0.18 * lateralSweep + mergeSpotY * 0.44) * (1 - portraitLock) + shakeY;
     const camZ =
       HERO_CAMERA_Z -
-      1.12 * trackEnvelope * (1 - merge * 0.45) -
-      0.74 * mergeFocus +
-      0.34 * (1 - introMotionState.awakeningLight) * (1 - portraitLock);
+      0.66 * trackEnvelope * (1 - merge * 0.45) -
+      0.48 * mergeFocus +
+      0.28 * (1 - introMotionState.awakeningLight) * (1 - portraitLock);
 
     camera.position.set(camX, camY, camZ);
     _lookTarget.set(camX * 0.32, camY * 0.68, 0);

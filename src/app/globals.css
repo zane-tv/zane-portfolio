@@ -97,15 +97,26 @@ body {
           url("/images/cursor-default-2x.png") 2x
         )
         3 3,
+      image-set(
+          url("/images/cursor-default.png") 1x,
+          url("/images/cursor-default-2x.png") 2x
+        )
+        3 3,
       url("/images/cursor-default.png") 3 3,
       auto;
   }
 
   html.custom-cursor-ready a,
   html.custom-cursor-ready button,
-  html.custom-cursor-ready [role="button"] {
+  html.custom-cursor-ready [role="button"],
+  html.custom-cursor-ready [data-cursor-magnetic] {
     cursor:
       -webkit-image-set(
+          url("/images/cursor-pointer.png") 1x,
+          url("/images/cursor-pointer-2x.png") 2x
+        )
+        3 3,
+      image-set(
           url("/images/cursor-pointer.png") 1x,
           url("/images/cursor-pointer-2x.png") 2x
         )
@@ -151,10 +162,10 @@ body {
   padding-inline: var(--space-container-x);
 }
 
-/* Subtle Visual Micro-Shake & Sympathetic Resonance Driven by Drum Beat */
-.drum-shake-stage {
+/* Subtle Visual Micro-Shake & Sympathetic Resonance Driven by Drum Beat
+   (Only transformed during active 320ms impulse to avoid permanent 13,000px GPU layer & fixed-positioning traps) */
+html.drum-shaking .drum-shake-stage {
   transform: translate3d(var(--drum-shake-x, 0px), var(--drum-shake-y, 0px), 0);
-  will-change: transform;
 }
 
 .drum-reactive-card {

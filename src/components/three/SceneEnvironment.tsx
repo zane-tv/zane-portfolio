@@ -4,11 +4,16 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { introMotionState } from "@/store/introStore";
+import { HERO_CAMERA_Z } from "./CameraRig";
+
+const BACKDROP_Z = -4.2;
+const BACKDROP_PROJ_SCALE = (HERO_CAMERA_Z - BACKDROP_Z) / HERO_CAMERA_Z;
 
 /**
  * Director's Cut Cinema Environment:
- * 1) Volumetric GLSL Solar Corona & Obsidian-Patina Nebula Backdrop (`z = -4.2`) with 14-fold
- *    Đông Sơn god-rays that track from center during Intro to the right-side Hero portrait stage.
+ * 1) Translucent Volumetric GLSL Solar Corona & 14-Ray Đông Sơn God-Rays (`z = -4.2`)
+ *    perspective-locked concentrically behind the 3D drum/portrait on both desktop & mobile,
+ *    letting `ParallaxHeritageBackdrop` shine through clearly once the Intro curtain lifts!
  * 2) Panavision 2.39:1 Anamorphic Horizontal Lens Streak (`anamorphicFlareMat`) that ignites
  *    across the frame when the Chim Lạc stamps into Bird Slot #0 and when the 14-ray Sun strikes!
  * 3) Museum-grade warm bronze key, burnished rim, and oxidized patina under-fill lighting.
@@ -22,9 +27,11 @@ export function SceneEnvironment() {
   const flareMeshRef = useRef<THREE.Mesh>(null);
 
   const stageShaders = useMemo(() => {
-    const backdropGeom = new THREE.PlaneGeometry(20, 12);
+    const backdropGeom = new THREE.PlaneGeometry(24, 16);
     const backdropMat = new THREE.ShaderMaterial({
+      transparent: true,
       depthWrite: false,
+      blending: THREE.AdditiveBlending,
       uniforms: {
         uTime: { value: 0 },
         uAwake: { value: 0 },
@@ -32,12 +39,15 @@ export function SceneEnvironment() {
         uStampWave: { value: 0 },
         uPulse: { value: 0 },
         uFlight: { value: 0 },
+        uHandoff: { value: 0 },
         uFocus: { value: new THREE.Vector2(0, 0) },
         uPointer: { value: new THREE.Vector2(0, 0) },
       },
       vertexShader: /* glsl */ `
+        varying vec2 vWorldXY;
         varying vec2 vUv;
         void main() {
+          vWorldXY = position.xy;
           vUv = uv * 2.0 - 1.0;
           gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
@@ -49,43 +59,40 @@ export function SceneEnvironment() {
         uniform float uStampWave;
         uniform float uPulse;
         uniform float uFlight;
+        uniform float uHandoff;
         uniform vec2 uFocus;
         uniform vec2 uPointer;
+        varying vec2 vWorldXY;
         varying vec2 vUv;
 
         void main() {
-          vec2 p = vUv * vec2(1.65, 1.0);
-          vec2 center = uFocus + uPointer * 0.08;
-          vec2 delta = p - center;
+          vec2 center = uFocus + uPointer * 0.25;
+          vec2 delta = (vWorldXY - center) * 0.26;
           float dist = length(delta);
           float angle = atan(delta.y, delta.x);
 
-          // Deep cinema obsidian base
-          vec3 voidDark = vec3(0.024, 0.031, 0.042);
-          vec3 charcoal = vec3(0.043, 0.055, 0.068);
           vec3 bronzeGlow = vec3(0.84, 0.58, 0.30);
           vec3 patinaMist = vec3(0.28, 0.62, 0.54);
 
-          // 14-harmonic Đông Sơn volumetric god-rays radiating from drum focus
+          // 14-harmonic Đông Sơn volumetric god-rays radiating concentrically from drum focus
           float rays14 = 0.5 + 0.5 * cos(angle * 14.0 - uTime * 0.18);
           float rays7 = 0.5 + 0.5 * sin(angle * 7.0 + uTime * 0.11);
           float godRays = pow(rays14, 3.2) * 0.65 + pow(rays7, 2.0) * 0.35;
-          float rayFalloff = exp(-dist * 1.45) * (0.28 + uDrumReveal * 0.55) * (1.0 - uFlight * 0.38);
+          float rayFalloff = exp(-dist * 1.45) * (0.28 + uDrumReveal * 0.55) * (1.0 - uFlight * 0.35);
 
           // Atmospheric caustic bronze corona + patina under-horizon mist
-          float corona = exp(-dist * 1.15) * uAwake;
+          float corona = exp(-dist * 1.25) * uAwake;
           float shockBoost = sin(uStampWave * 3.14159) * 0.45 + sin(uPulse * 3.14159) * 0.38;
-          float lowerMist = smoothstep(0.35, -1.05, vUv.y) * exp(-abs(p.x - center.x) * 0.85);
+          float lowerMist = smoothstep(0.35, -1.05, vUv.y) * exp(-abs(delta.x) * 0.95);
 
-          vec3 col = mix(voidDark, charcoal, smoothstep(1.5, 0.0, length(p)));
-          col += bronzeGlow * (corona * 0.13 + godRays * rayFalloff * 0.11 + shockBoost * exp(-dist * 1.3) * 0.22);
-          col += patinaMist * lowerMist * 0.065 * uAwake;
+          float idleSoften = 1.0 - uHandoff * 0.5;
+          float glowEnergy = (corona * 0.12 + godRays * rayFalloff * 0.11 + shockBoost * exp(-dist * 1.3) * 0.22) * idleSoften;
+          float mistEnergy = lowerMist * 0.055 * uAwake * idleSoften;
+          vec3 col = bronzeGlow * glowEnergy + patinaMist * mistEnergy;
 
-          // Subtle editorial dark vignette on left text zone during Hero idle so typography pops crisply
-          float textReadabilityMask = smoothstep(-0.9, 0.45, p.x) * uFlight;
-          col *= mix(1.0, 0.72 + 0.28 * textReadabilityMask, uFlight * 0.65);
-
-          gl_FragColor = vec4(col, 1.0);
+          float edgeMask = smoothstep(1.0, 0.72, max(abs(vUv.x), abs(vUv.y)));
+          float outAlpha = clamp((glowEnergy * 1.6 + mistEnergy * 1.4) * edgeMask, 0.0, 0.82);
+          gl_FragColor = vec4(col * edgeMask, outAlpha);
         }
       `,
     });
@@ -187,23 +194,26 @@ export function SceneEnvironment() {
       ghostRingRef.current.rotation.z = t * 0.05;
     }
 
-    // Update volumetric solar corona backdrop uniforms
-    const focusX = THREE.MathUtils.lerp(
-      introMotionState.startWorldX * 0.35,
-      introMotionState.targetWorldX * 0.38,
+    // Update volumetric solar corona backdrop uniforms (perspective-projected concentrically onto z = -4.2)
+    const drumX = THREE.MathUtils.lerp(
+      introMotionState.startWorldX,
+      introMotionState.targetWorldX,
       flightU
     );
-    const focusY = THREE.MathUtils.lerp(
-      introMotionState.startWorldY * 0.35,
-      introMotionState.targetWorldY * 0.35,
+    const drumY = THREE.MathUtils.lerp(
+      introMotionState.startWorldY,
+      introMotionState.targetWorldY,
       flightU
     );
+    const focusX = drumX * BACKDROP_PROJ_SCALE;
+    const focusY = drumY * BACKDROP_PROJ_SCALE;
     stageShaders.backdropMat.uniforms.uTime!.value = t;
     stageShaders.backdropMat.uniforms.uAwake!.value = awake;
     stageShaders.backdropMat.uniforms.uDrumReveal!.value = introMotionState.drumRevealProgress;
     stageShaders.backdropMat.uniforms.uStampWave!.value = stampWave;
     stageShaders.backdropMat.uniforms.uPulse!.value = pulse;
     stageShaders.backdropMat.uniforms.uFlight!.value = flightU;
+    stageShaders.backdropMat.uniforms.uHandoff!.value = introMotionState.domHandoffAlpha;
     (stageShaders.backdropMat.uniforms.uFocus!.value as THREE.Vector2).set(focusX, focusY);
     (stageShaders.backdropMat.uniforms.uPointer!.value as THREE.Vector2).set(
       introMotionState.pointerSmoothX,
@@ -251,14 +261,11 @@ export function SceneEnvironment() {
 
   return (
     <>
-      <color attach="background" args={["#07090c"]} />
-      <fogExp2 attach="fog" args={["#07090c", 0.052]} />
-
-      {/* Volumetric Solar Corona & Obsidian-Patina Cinema Backdrop */}
+      {/* Translucent Volumetric Solar Corona & 14-Ray Đông Sơn God-Rays (`alpha: true` Canvas reveals ParallaxHeritageBackdrop!) */}
       <mesh
         geometry={stageShaders.backdropGeom}
         material={stageShaders.backdropMat}
-        position={[0, 0, -4.2]}
+        position={[0, 0, BACKDROP_Z]}
         renderOrder={-10}
       />
 
