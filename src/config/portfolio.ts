@@ -445,7 +445,7 @@ export const portfolioConfig: PortfolioConfig = {
     title: "Zane — Trương Văn Tiến (@zane-tv) | Full-Stack, AI & Data Software Engineer",
     description:
       "Cinematic 3D Đông Sơn portfolio of Trương Văn Tiến — Zane (@zane-tv, Ho Chi Minh City): Full-Stack, AI, Data & DevOps Engineer delivering across Japan, Sweden, and Germany.",
-    siteUrl: "https://portfolio-mu-lilac-47.vercel.app",
+    siteUrl: "https://zanedev.pro",
     keywords: [
       "Trương Văn Tiến",
       "Truong Van Tien",
