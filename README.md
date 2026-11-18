@@ -1,5 +1,7 @@
 # Zane (`@zane-tv`) — Cinematic 3D Personal Portfolio
 
+**Live Portfolio**: [https://zanedev.pro](https://zanedev.pro) · **GitHub Profile**: [github.com/zane-tv](https://github.com/zane-tv)
+
 **Vietnamese Heritage × Future Technology** — A bilingual (`EN` / `VI`) interactive 3D personal portfolio built with **Next.js (App Router), TypeScript, React Three Fiber, Three.js, GSAP, and Tailwind CSS**.
 
 Reinterprets the sacred geometry of the **Đông Sơn bronze drum** (*Trống Đồng Ngọc Lũ*) and flying **Chim Lạc / Chim Hạc** into a real-time 3D WebGL & editorial showcase for **Trương Văn Tiến — Zane (`@zane-tv`)**.
