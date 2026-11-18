@@ -3,10 +3,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { mergeStaticMeshGeometries } from "@/lib/dongSonGeometry";
 import { introMotionState } from "@/store/introStore";
 
 const _ivoryBaseColor = new THREE.Color("#f3ede2");
 const _moltenGoldColor = new THREE.Color("#efc68c");
+const _instDummy = new THREE.Object3D();
 
 export interface CraneWingtipHandle {
   getWingtipWorldPositions: (leftOut: THREE.Vector3, rightOut: THREE.Vector3) => boolean;
@@ -83,7 +85,6 @@ function createWingAirfoilSurface(
     for (let iv = 0; iv <= segsV; iv++) {
       const v = iv / segsV;
       const z = THREE.MathUtils.lerp(leadZ, trailZ, v);
-      // Aerodynamic airfoil thickness & dorsal camber
       const camber = Math.sin(Math.pow(v, 0.7) * Math.PI) * 0.036 * (1 - u * 0.45);
       positions.push(x, camber, z);
     }
@@ -205,12 +206,12 @@ interface WingFeatherItem {
   posX: number;
   posY: number;
   posZ: number;
+  rotX: number;
   /** Positive rotation around +Y sweeps (+X) backward toward -Z (tail)! */
   sweepBackY: number;
   dihedralZ: number;
   length: number;
   chordScale: number;
-  dissolveOrder: number;
 }
 
 export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, ref) {
@@ -227,8 +228,16 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
   const tailStreamerLeftRef = useRef<THREE.Mesh>(null);
   const tailStreamerRightRef = useRef<THREE.Mesh>(null);
 
-  const leftFeatherRefs = useRef<Array<THREE.Mesh | null>>([]);
-  const rightFeatherRefs = useRef<Array<THREE.Mesh | null>>([]);
+  // Batched InstancedMeshes for all 68 wing feathers (8 draw calls total instead of 68!)
+  const leftCovertInstRef = useRef<THREE.InstancedMesh>(null);
+  const leftSecondaryInstRef = useRef<THREE.InstancedMesh>(null);
+  const leftInnerPrimaryInstRef = useRef<THREE.InstancedMesh>(null);
+  const leftOuterPrimaryInstRef = useRef<THREE.InstancedMesh>(null);
+
+  const rightCovertInstRef = useRef<THREE.InstancedMesh>(null);
+  const rightSecondaryInstRef = useRef<THREE.InstancedMesh>(null);
+  const rightInnerPrimaryInstRef = useRef<THREE.InstancedMesh>(null);
+  const rightOuterPrimaryInstRef = useRef<THREE.InstancedMesh>(null);
 
   useImperativeHandle(ref, () => ({
     getWingtipWorldPositions: (leftOut: THREE.Vector3, rightOut: THREE.Vector3) => {
@@ -250,7 +259,6 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
     const { bodyGeom, beakGeom } = createLoftedCraneTorsoAndNeck();
     const featherGeom = createCamberedFeatherGeometry();
 
-    // Continuous sculpted inner & outer wing airfoil mantles (gap-free sleek silhouette!)
     const innerAirfoilGeom = createWingAirfoilSurface(0.86, 0.20, -0.34, 0.14, -0.28);
     const outerAirfoilGeom = createWingAirfoilSurface(0.82, 0.12, -0.26, -0.06, -0.32);
 
@@ -274,7 +282,17 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       new THREE.Vector3(0, 0.15, -0.40),
       new THREE.Vector3(0, 0.11, -0.60),
     ]);
-    const crestPlumeGeom = new THREE.TubeGeometry(crestCurve, 18, 0.006, 6, false);
+    const singleCrestGeom = new THREE.TubeGeometry(crestCurve, 18, 0.006, 6, false);
+    const dummy = new THREE.Object3D();
+    const crestParts = [-2, -1, 0, 1, 2].map((cIdx) => {
+      dummy.position.set(cIdx * 0.011, 0, 0);
+      dummy.rotation.set(Math.abs(cIdx) * -0.06, cIdx * 0.075, 0);
+      dummy.scale.set(1, 1, 1 - Math.abs(cIdx) * 0.13);
+      dummy.updateMatrix();
+      return { geometry: singleCrestGeom, matrix: dummy.matrix.clone() };
+    });
+    const mergedCrestGeom = mergeStaticMeshGeometries(crestParts);
+    singleCrestGeom.dispose();
 
     const streamerCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0, 0, 0),
@@ -290,9 +308,45 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       new THREE.Vector3(0, -0.15, -1.24),
       new THREE.Vector3(0, -0.18, -1.42),
     ]);
-    const legGeom = new THREE.TubeGeometry(legCurve, 18, 0.0085, 7, false);
+    const singleLegGeom = new THREE.TubeGeometry(legCurve, 18, 0.0085, 7, false);
+    const legParts = [0.052, -0.052].map((lx) => {
+      dummy.position.set(lx, 0, 0);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      return { geometry: singleLegGeom, matrix: dummy.matrix.clone() };
+    });
+    const mergedLegsGeom = mergeStaticMeshGeometries(legParts);
+    singleLegGeom.dispose();
 
-    const eyeGeom = new THREE.SphereGeometry(0.014, 10, 10);
+    const singleEyeGeom = new THREE.SphereGeometry(0.014, 10, 10);
+    const eyeParts = [0.044, -0.044].map((ex) => {
+      dummy.position.set(ex, 0.502, 0.865);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      return { geometry: singleEyeGeom, matrix: dummy.matrix.clone() };
+    });
+    const mergedEyesGeom = mergeStaticMeshGeometries(eyeParts);
+    singleEyeGeom.dispose();
+
+    const tailBronzeParts: Array<{ geometry: THREE.BufferGeometry; matrix: THREE.Matrix4 }> = [];
+    const tailIvoryParts: Array<{ geometry: THREE.BufferGeometry; matrix: THREE.Matrix4 }> = [];
+    for (const tIdx of [-3, -2, -1, 0, 1, 2, 3]) {
+      dummy.position.set(tIdx * 0.018, 0, 0);
+      dummy.rotation.set(0.05, Math.PI / 2 + tIdx * 0.11, 0.03);
+      dummy.scale.set(0.66 - Math.abs(tIdx) * 0.045, 1, 1.3);
+      dummy.updateMatrix();
+      const entry = { geometry: featherGeom, matrix: dummy.matrix.clone() };
+      if (Math.abs(tIdx) % 2 === 1) {
+        tailBronzeParts.push(entry);
+      } else {
+        tailIvoryParts.push(entry);
+      }
+    }
+    const mergedTailBronzeGeom = mergeStaticMeshGeometries(tailBronzeParts);
+    const mergedTailIvoryGeom = mergeStaticMeshGeometries(tailIvoryParts);
+
     const crownCapGeom = new THREE.SphereGeometry(0.042, 14, 10);
     crownCapGeom.scale(0.82, 0.4, 1.16);
 
@@ -304,97 +358,117 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       outerAirfoilGeom,
       innerSparGeom,
       outerSparGeom,
-      crestPlumeGeom,
+      mergedCrestGeom,
       streamerGeom,
-      legGeom,
-      eyeGeom,
+      mergedLegsGeom,
+      mergedEyesGeom,
+      mergedTailBronzeGeom,
+      mergedTailIvoryGeom,
       crownCapGeom,
     };
   }, []);
 
-  // 34 overlapping backward-swept sculpted feathers per wing (68 total!)
-  const wingFeathers = useMemo<WingFeatherItem[]>(() => {
-    const items: WingFeatherItem[] = [];
+  // 34 overlapping backward-swept sculpted feathers per wing partitioned into 4 instanced groups
+  const featherGroups = useMemo(() => {
+    const coverts: WingFeatherItem[] = [];
+    const secondaries: WingFeatherItem[] = [];
+    const innerPrimaries: WingFeatherItem[] = [];
+    const outerPrimaries: WingFeatherItem[] = [];
     let id = 0;
 
-    // Tier 1: 11 Golden-Bronze Upper Wing Coverts (overlapping backward toward -Z)
     for (let i = 0; i < 11; i++) {
       const u = i / 10;
-      items.push({
+      coverts.push({
         id: id++,
         tier: "covert",
         u,
         posX: 0.04 + u * 0.76,
         posY: 0.032 + Math.sin(u * Math.PI) * 0.015,
         posZ: 0.14 - u * 0.02,
-        sweepBackY: 1.18 - u * 0.24, // POSITIVE -> sweeps smoothly backward toward tail (-Z)!
+        rotX: 0.02,
+        sweepBackY: 1.18 - u * 0.24,
         dihedralZ: -0.02,
         length: 0.36 + Math.sin(u * Math.PI) * 0.07,
         chordScale: 1.35,
-        dissolveOrder: 0.52 + (1 - u) * 0.3,
       });
     }
 
-    // Tier 2: 12 Lush Pearl-Ivory Secondary Flight Feathers
     for (let i = 0; i < 12; i++) {
       const u = i / 11;
-      items.push({
+      secondaries.push({
         id: id++,
         tier: "secondary",
         u,
         posX: 0.03 + u * 0.8,
         posY: 0.016 + Math.sin(u * Math.PI) * 0.012,
         posZ: 0.06 - u * 0.02,
-        sweepBackY: 1.24 - u * 0.28, // Sweeps cleanly backward!
+        rotX: 0.02,
+        sweepBackY: 1.24 - u * 0.28,
         dihedralZ: -0.01,
         length: 0.58 + u * 0.12,
         chordScale: 1.5,
-        dissolveOrder: 0.3 + (1 - u) * 0.34,
       });
     }
 
-    // Tier 3: 11 Long Slotted Bronze-Gold Primary Flight Remiges at Wingtips
     for (let i = 0; i < 11; i++) {
       const u = i / 10;
-      items.push({
+      const item: WingFeatherItem = {
         id: id++,
         tier: "primary",
         u,
         posX: u * 0.78,
         posY: 0.012 + u * 0.02,
         posZ: 0.04 - u * 0.12,
-        // Fan gracefully from backward inner primary (+0.96 rad) out to slotted wingtip (+0.18 rad)
+        rotX: 0.03,
         sweepBackY: 0.96 - u * 0.78,
         dihedralZ: 0.015 + u * 0.085,
         length: 0.72 + Math.sin(u * Math.PI * 0.78) * 0.38,
         chordScale: 1.32 - u * 0.34,
-        dissolveOrder: (1 - u) * 0.32,
-      });
+      };
+      if (u > 0.45) {
+        outerPrimaries.push(item);
+      } else {
+        innerPrimaries.push(item);
+      }
     }
 
-    return items;
+    return { coverts, secondaries, innerPrimaries, outerPrimaries };
   }, []);
 
   const materials = useMemo(() => {
-    const pearlIvoryBody = new THREE.MeshStandardMaterial({
+    const pearlIvorySolid = new THREE.MeshStandardMaterial({
       color: new THREE.Color("#f3ede2"),
       emissive: new THREE.Color("#d29a5c"),
       emissiveIntensity: 0.14,
       metalness: 0.32,
       roughness: 0.26,
-      transparent: true,
-      opacity: 1,
+      side: THREE.FrontSide,
+    });
+
+    const pearlIvorySheet = new THREE.MeshStandardMaterial({
+      color: new THREE.Color("#f3ede2"),
+      emissive: new THREE.Color("#d29a5c"),
+      emissiveIntensity: 0.14,
+      metalness: 0.32,
+      roughness: 0.26,
       side: THREE.DoubleSide,
     });
 
-    const burnishedBronze = new THREE.MeshStandardMaterial({
+    const burnishedBronzeSolid = new THREE.MeshStandardMaterial({
       color: new THREE.Color("#e0a969"),
       emissive: new THREE.Color("#8f561b"),
       emissiveIntensity: 0.28,
       metalness: 0.84,
       roughness: 0.23,
-      transparent: true,
-      opacity: 1,
+      side: THREE.FrontSide,
+    });
+
+    const burnishedBronzeSheet = new THREE.MeshStandardMaterial({
+      color: new THREE.Color("#e0a969"),
+      emissive: new THREE.Color("#8f561b"),
+      emissiveIntensity: 0.28,
+      metalness: 0.84,
+      roughness: 0.23,
       side: THREE.DoubleSide,
     });
 
@@ -404,8 +478,7 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       emissiveIntensity: 0.28,
       metalness: 0.48,
       roughness: 0.28,
-      transparent: true,
-      opacity: 1,
+      side: THREE.FrontSide,
     });
 
     const obsidianEye = new THREE.MeshStandardMaterial({
@@ -414,19 +487,15 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       emissiveIntensity: 0.22,
       metalness: 0.88,
       roughness: 0.1,
-      transparent: true,
-      opacity: 1,
+      side: THREE.FrontSide,
     });
 
-    // Shared 3-material GPU pool instead of 34 separate MeshPhysicalMaterial clearcoat shaders!
     const covertMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color("#d9a05e"),
       emissive: new THREE.Color("#c28542"),
       emissiveIntensity: 0.24,
       metalness: 0.78,
       roughness: 0.24,
-      transparent: true,
-      opacity: 1,
       side: THREE.DoubleSide,
     });
 
@@ -436,8 +505,6 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       emissiveIntensity: 0.13,
       metalness: 0.36,
       roughness: 0.25,
-      transparent: true,
-      opacity: 1,
       side: THREE.DoubleSide,
     });
 
@@ -447,41 +514,67 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       emissiveIntensity: 0.24,
       metalness: 0.78,
       roughness: 0.24,
-      transparent: true,
-      opacity: 1,
       side: THREE.DoubleSide,
     });
 
-    const sharedPool = [covertMat, secondaryMat, primaryGoldMat];
-    const featherMaterials = wingFeathers.map((f) => {
-      if (f.tier === "covert") return covertMat;
-      if (f.tier === "primary" && f.u > 0.45) return primaryGoldMat;
-      return secondaryMat;
-    });
-
-    return {
-      pearlIvoryBody,
-      burnishedBronze,
+    const all = [
+      pearlIvorySolid,
+      pearlIvorySheet,
+      burnishedBronzeSolid,
+      burnishedBronzeSheet,
       imperialCrown,
       obsidianEye,
-      sharedPool,
-      featherMaterials,
+      covertMat,
+      secondaryMat,
+      primaryGoldMat,
+    ];
+
+    return {
+      pearlIvorySolid,
+      pearlIvorySheet,
+      burnishedBronzeSolid,
+      burnishedBronzeSheet,
+      imperialCrown,
+      obsidianEye,
+      covertMat,
+      secondaryMat,
+      primaryGoldMat,
+      all,
     };
-  }, [wingFeathers]);
+  }, []);
 
   useEffect(() => {
+    const syncStaticFeatherInstances = (
+      items: WingFeatherItem[],
+      leftInst: THREE.InstancedMesh | null,
+      rightInst: THREE.InstancedMesh | null
+    ) => {
+      if (!leftInst || !rightInst) return;
+      for (let i = 0; i < items.length; i++) {
+        const f = items[i]!;
+        _instDummy.position.set(f.posX, f.posY, f.posZ);
+        _instDummy.rotation.set(f.rotX, f.sweepBackY, f.dihedralZ);
+        _instDummy.scale.set(f.length, 1, f.chordScale);
+        _instDummy.updateMatrix();
+        leftInst.setMatrixAt(i, _instDummy.matrix);
+      }
+      rightInst.instanceMatrix.array.set(leftInst.instanceMatrix.array);
+      leftInst.instanceMatrix.needsUpdate = true;
+      rightInst.instanceMatrix.needsUpdate = true;
+    };
+
+    syncStaticFeatherInstances(featherGroups.coverts, leftCovertInstRef.current, rightCovertInstRef.current);
+    syncStaticFeatherInstances(featherGroups.secondaries, leftSecondaryInstRef.current, rightSecondaryInstRef.current);
+    syncStaticFeatherInstances(featherGroups.innerPrimaries, leftInnerPrimaryInstRef.current, rightInnerPrimaryInstRef.current);
+    syncStaticFeatherInstances(featherGroups.outerPrimaries, leftOuterPrimaryInstRef.current, rightOuterPrimaryInstRef.current);
+
     return () => {
       Object.values(geometries).forEach((g) => g.dispose());
-      materials.pearlIvoryBody.dispose();
-      materials.burnishedBronze.dispose();
-      materials.imperialCrown.dispose();
-      materials.obsidianEye.dispose();
-      materials.sharedPool.forEach((m) => m.dispose());
+      materials.all.forEach((m) => m.dispose());
     };
-  }, [geometries, materials]);
+  }, [featherGroups, geometries, materials]);
 
   useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
     const enter = introMotionState.craneEnterAlpha;
     const merge = introMotionState.craneMergeProgress;
 
@@ -490,18 +583,17 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
     rootRef.current.visible = visible;
     if (!visible) return;
 
+    const t = clock.getElapsedTime();
     const flapFreq = 4.8 * (1 - merge * 0.78);
     const phase = t * flapFreq;
     const downstroke = Math.sin(phase);
     const wristWave = Math.sin(phase - 0.78);
 
-    // As merge -> 1, morph smoothly from symmetric 3D flight into the swept-back Ngọc Lũ relief profile!
     const profileMorph = THREE.MathUtils.smoothstep(merge, 0.05, 0.85);
     const shoulderAngle = (downstroke * 0.52 + 0.06) * (1 - merge) + merge * 0.1;
     const wristAngle = wristWave * 0.44 * (1 - merge) + merge * 0.04;
 
     if (leftShoulderRef.current) {
-      // Radially inward wing tucks gracefully into the lower relief silhouette
       leftShoulderRef.current.rotation.z = shoulderAngle * (1 - profileMorph * 0.5);
       leftShoulderRef.current.rotation.y = -profileMorph * 0.72;
       const inScale = 1 - profileMorph * 0.58;
@@ -511,7 +603,6 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       leftWristRef.current.rotation.z = wristAngle;
     }
     if (rightShoulderRef.current) {
-      // Radially outward wing sweeps back into the grand upswept Đông Sơn primary wing
       rightShoulderRef.current.rotation.z = shoulderAngle;
       rightShoulderRef.current.rotation.y = -profileMorph * 0.36;
       const outScale = 1 - profileMorph * 0.22;
@@ -529,103 +620,105 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
       tailStreamerRightRef.current.rotation.y = -Math.sin(t * 6.0 + 0.8) * 0.075 * (1 - merge);
     }
 
-    // Transmute pearl-ivory into incandescent molten cast-gold & cross-fade seamlessly (`0.36 -> 0.88`)
-    // right as Lead Bird #0 crystallizes underneath on the rotating Đông Sơn drum!
     const meltT = THREE.MathUtils.clamp((merge - 0.36) / 0.52, 0, 1);
     const quinticMelt = meltT * meltT * meltT * (meltT * (meltT * 6 - 15) + 10);
     const stampHandoffFade = 1 - quinticMelt;
     const coreAlpha = enter * stampHandoffFade;
+    const isTranslucent = coreAlpha < 0.998;
+    const shouldWriteDepth = coreAlpha > 0.82;
     const moltenGlow = Math.pow(merge, 1.2) * 2.8;
 
-    materials.pearlIvoryBody.opacity = coreAlpha;
-    materials.pearlIvoryBody.color.lerpColors(
-      _ivoryBaseColor,
-      _moltenGoldColor,
-      THREE.MathUtils.smoothstep(merge, 0.05, 0.72)
-    );
-    materials.pearlIvoryBody.metalness = 0.3 + merge * 0.58;
-    materials.pearlIvoryBody.emissiveIntensity = 0.13 + moltenGlow;
-
-    materials.burnishedBronze.opacity = coreAlpha;
-    materials.burnishedBronze.emissiveIntensity = 0.26 + moltenGlow * 1.15;
-    materials.imperialCrown.opacity = coreAlpha;
-    materials.obsidianEye.opacity = coreAlpha;
-
-    const [covertMat, secondaryMat, primaryGoldMat] = materials.sharedPool;
-    if (covertMat && secondaryMat && primaryGoldMat) {
-      covertMat.opacity = coreAlpha;
-      covertMat.metalness = Math.min(1, 0.78 + merge * 0.2);
-      covertMat.emissiveIntensity = 0.24 + moltenGlow;
-
-      secondaryMat.opacity = coreAlpha;
-      secondaryMat.metalness = 0.36 + merge * 0.52;
-      secondaryMat.emissiveIntensity = 0.13 + moltenGlow;
-
-      primaryGoldMat.opacity = coreAlpha;
-      primaryGoldMat.metalness = Math.min(1, 0.78 + merge * 0.2);
-      primaryGoldMat.emissiveIntensity = 0.24 + moltenGlow;
+    for (const mat of materials.all) {
+      mat.transparent = isTranslucent;
+      mat.depthWrite = shouldWriteDepth;
+      mat.opacity = coreAlpha;
     }
 
-    wingFeathers.forEach((f, idx) => {
-      const flexLoad =
-        f.tier === "primary"
-          ? -downstroke * 0.13 * f.u * (1 - merge)
-          : -downstroke * 0.04 * f.u * (1 - merge);
+    const colorMix = THREE.MathUtils.smoothstep(merge, 0.05, 0.72);
+    materials.pearlIvorySolid.color.lerpColors(_ivoryBaseColor, _moltenGoldColor, colorMix);
+    materials.pearlIvorySolid.metalness = 0.3 + merge * 0.58;
+    materials.pearlIvorySolid.emissiveIntensity = 0.13 + moltenGlow;
 
-      for (const mesh of [leftFeatherRefs.current[idx], rightFeatherRefs.current[idx]]) {
-        if (!mesh) continue;
-        mesh.rotation.z = f.dihedralZ + flexLoad;
-        mesh.position.x = f.posX;
-        mesh.position.y = f.posY;
+    materials.pearlIvorySheet.color.copy(materials.pearlIvorySolid.color);
+    materials.pearlIvorySheet.metalness = materials.pearlIvorySolid.metalness;
+    materials.pearlIvorySheet.emissiveIntensity = materials.pearlIvorySolid.emissiveIntensity;
+
+    materials.burnishedBronzeSolid.emissiveIntensity = 0.26 + moltenGlow * 1.15;
+    materials.burnishedBronzeSheet.emissiveIntensity = materials.burnishedBronzeSolid.emissiveIntensity;
+
+    materials.covertMat.metalness = Math.min(1, 0.78 + merge * 0.2);
+    materials.covertMat.emissiveIntensity = 0.24 + moltenGlow;
+
+    materials.secondaryMat.metalness = 0.36 + merge * 0.52;
+    materials.secondaryMat.emissiveIntensity = 0.13 + moltenGlow;
+
+    materials.primaryGoldMat.metalness = Math.min(1, 0.78 + merge * 0.2);
+    materials.primaryGoldMat.emissiveIntensity = 0.24 + moltenGlow;
+
+    const updateFeatherBatch = (
+      items: WingFeatherItem[],
+      flexFactor: number,
+      leftInst: THREE.InstancedMesh | null,
+      rightInst: THREE.InstancedMesh | null
+    ) => {
+      if (!leftInst || !rightInst) return;
+      for (let i = 0; i < items.length; i++) {
+        const f = items[i]!;
+        const flexLoad = -downstroke * flexFactor * f.u * (1 - merge);
+        _instDummy.position.set(f.posX, f.posY, f.posZ);
+        _instDummy.rotation.set(f.rotX, f.sweepBackY, f.dihedralZ + flexLoad);
+        _instDummy.scale.set(f.length, 1, f.chordScale);
+        _instDummy.updateMatrix();
+        leftInst.setMatrixAt(i, _instDummy.matrix);
       }
-    });
+      rightInst.instanceMatrix.array.set(leftInst.instanceMatrix.array);
+      leftInst.instanceMatrix.needsUpdate = true;
+      rightInst.instanceMatrix.needsUpdate = true;
+    };
+
+    updateFeatherBatch(featherGroups.coverts, 0.04, leftCovertInstRef.current, rightCovertInstRef.current);
+    updateFeatherBatch(featherGroups.secondaries, 0.04, leftSecondaryInstRef.current, rightSecondaryInstRef.current);
+    updateFeatherBatch(featherGroups.innerPrimaries, 0.13, leftInnerPrimaryInstRef.current, rightInnerPrimaryInstRef.current);
+    updateFeatherBatch(featherGroups.outerPrimaries, 0.13, leftOuterPrimaryInstRef.current, rightOuterPrimaryInstRef.current);
   });
 
   const renderWingContents = (
     shoulderRef: React.RefObject<THREE.Group | null>,
     wristRef: React.RefObject<THREE.Group | null>,
     tipRef: React.RefObject<THREE.Object3D | null>,
-    featherSlotRefs: React.MutableRefObject<Array<THREE.Mesh | null>>,
-    keyPrefix: string
+    covertRef: React.RefObject<THREE.InstancedMesh | null>,
+    secondaryRef: React.RefObject<THREE.InstancedMesh | null>,
+    innerPrimaryRef: React.RefObject<THREE.InstancedMesh | null>,
+    outerPrimaryRef: React.RefObject<THREE.InstancedMesh | null>
   ) => (
     <group ref={shoulderRef} position={[0.09, 0.055, 0.06]}>
-      <mesh geometry={geometries.innerAirfoilGeom} material={materials.pearlIvoryBody} />
-      <mesh geometry={geometries.innerSparGeom} material={materials.burnishedBronze} />
+      <mesh geometry={geometries.innerAirfoilGeom} material={materials.pearlIvorySheet} />
+      <mesh geometry={geometries.innerSparGeom} material={materials.burnishedBronzeSolid} />
 
-      {wingFeathers
-        .filter((f) => f.tier !== "primary")
-        .map((f) => (
-          <mesh
-            key={`${keyPrefix}-in-${f.id}`}
-            ref={(el) => {
-              featherSlotRefs.current[f.id] = el;
-            }}
-            geometry={geometries.featherGeom}
-            material={materials.featherMaterials[f.id]}
-            position={[f.posX, f.posY, f.posZ]}
-            rotation={[0.02, f.sweepBackY, f.dihedralZ]}
-            scale={[f.length, 1, f.chordScale]}
-          />
-        ))}
+      <instancedMesh
+        ref={covertRef}
+        args={[geometries.featherGeom, materials.covertMat, featherGroups.coverts.length]}
+        frustumCulled={false}
+      />
+      <instancedMesh
+        ref={secondaryRef}
+        args={[geometries.featherGeom, materials.secondaryMat, featherGroups.secondaries.length]}
+        frustumCulled={false}
+      />
 
       <group ref={wristRef} position={[0.84, 0.025, 0.11]}>
-        <mesh geometry={geometries.outerAirfoilGeom} material={materials.pearlIvoryBody} />
-        <mesh geometry={geometries.outerSparGeom} material={materials.burnishedBronze} />
-        {wingFeathers
-          .filter((f) => f.tier === "primary")
-          .map((f) => (
-            <mesh
-              key={`${keyPrefix}-pri-${f.id}`}
-              ref={(el) => {
-                featherSlotRefs.current[f.id] = el;
-              }}
-              geometry={geometries.featherGeom}
-              material={materials.featherMaterials[f.id]}
-              position={[f.posX, f.posY, f.posZ]}
-              rotation={[0.03, f.sweepBackY, f.dihedralZ]}
-              scale={[f.length, 1, f.chordScale]}
-            />
-          ))}
+        <mesh geometry={geometries.outerAirfoilGeom} material={materials.pearlIvorySheet} />
+        <mesh geometry={geometries.outerSparGeom} material={materials.burnishedBronzeSolid} />
+        <instancedMesh
+          ref={innerPrimaryRef}
+          args={[geometries.featherGeom, materials.secondaryMat, featherGroups.innerPrimaries.length]}
+          frustumCulled={false}
+        />
+        <instancedMesh
+          ref={outerPrimaryRef}
+          args={[geometries.featherGeom, materials.primaryGoldMat, featherGroups.outerPrimaries.length]}
+          frustumCulled={false}
+        />
         <object3D ref={tipRef} position={[1.48, 0.06, -0.26]} />
       </group>
     </group>
@@ -634,84 +727,65 @@ export const CraneModel = forwardRef<CraneWingtipHandle>(function CraneModel(_, 
   return (
     <group ref={rootRef} scale={0.86}>
       {/* 1. Sculpted Lofted Pearl-Ivory Torso, Keeled Breast & Graceful S-Neck */}
-      <mesh geometry={geometries.bodyGeom} material={materials.pearlIvoryBody} />
+      <mesh geometry={geometries.bodyGeom} material={materials.pearlIvorySolid} />
 
-      {/* 2. Elongated Burnished-Bronze Lạc Beak, Imperial Crown Cap & Gleaming Eyes */}
-      <mesh geometry={geometries.beakGeom} material={materials.burnishedBronze} />
+      {/* 2. Elongated Burnished-Bronze Lạc Beak, Imperial Crown Cap & Merged Gleaming Eyes */}
+      <mesh geometry={geometries.beakGeom} material={materials.burnishedBronzeSolid} />
       <mesh
         geometry={geometries.crownCapGeom}
         material={materials.imperialCrown}
         position={[0, 0.546, 0.855]}
         rotation={[-0.14, 0, 0]}
       />
-      <mesh
-        geometry={geometries.eyeGeom}
-        material={materials.obsidianEye}
-        position={[0.044, 0.502, 0.865]}
-      />
-      <mesh
-        geometry={geometries.eyeGeom}
-        material={materials.obsidianEye}
-        position={[-0.044, 0.502, 0.865]}
-      />
+      <mesh geometry={geometries.mergedEyesGeom} material={materials.obsidianEye} />
 
-      {/* 3. Five-Plume Flowing Đông Sơn Royal Crest */}
+      {/* 3. Merged Five-Plume Flowing Đông Sơn Royal Crest */}
       <group ref={crestGroupRef} position={[0, 0.525, 0.79]}>
-        {[-2, -1, 0, 1, 2].map((cIdx) => (
-          <mesh
-            key={`crest-${cIdx}`}
-            geometry={geometries.crestPlumeGeom}
-            material={materials.burnishedBronze}
-            position={[cIdx * 0.011, 0, 0]}
-            rotation={[Math.abs(cIdx) * -0.06, cIdx * 0.075, 0]}
-            scale={[1, 1, 1 - Math.abs(cIdx) * 0.13]}
-          />
-        ))}
+        <mesh geometry={geometries.mergedCrestGeom} material={materials.burnishedBronzeSolid} />
       </group>
 
-      {/* 4. Seven-Plume Ceremonial Tail Fan + Dual Flowing Đông Sơn Tail Streamers */}
+      {/* 4. Merged Seven-Plume Ceremonial Tail Fan + Dual Flowing Đông Sơn Tail Streamers */}
       <group position={[0, 0.042, -0.6]}>
-        {[-3, -2, -1, 0, 1, 2, 3].map((tIdx) => (
-          <mesh
-            key={`tail-fan-${tIdx}`}
-            geometry={geometries.featherGeom}
-            material={Math.abs(tIdx) % 2 === 1 ? materials.burnishedBronze : materials.pearlIvoryBody}
-            position={[tIdx * 0.018, 0, 0]}
-            rotation={[0.05, Math.PI / 2 + tIdx * 0.11, 0.03]}
-            scale={[0.66 - Math.abs(tIdx) * 0.045, 1, 1.3]}
-          />
-        ))}
+        <mesh geometry={geometries.mergedTailBronzeGeom} material={materials.burnishedBronzeSheet} />
+        <mesh geometry={geometries.mergedTailIvoryGeom} material={materials.pearlIvorySheet} />
         <mesh
           ref={tailStreamerLeftRef}
           geometry={geometries.streamerGeom}
-          material={materials.burnishedBronze}
+          material={materials.burnishedBronzeSolid}
           position={[0.045, 0.01, -0.08]}
         />
         <mesh
           ref={tailStreamerRightRef}
           geometry={geometries.streamerGeom}
-          material={materials.burnishedBronze}
+          material={materials.burnishedBronzeSolid}
           position={[-0.045, 0.01, -0.08]}
           scale={[-1, 1, 1]}
         />
       </group>
 
-      {/* 5. Sculpted Trailing Crane Legs */}
-      <mesh
-        geometry={geometries.legGeom}
-        material={materials.burnishedBronze}
-        position={[0.052, 0, 0]}
-      />
-      <mesh
-        geometry={geometries.legGeom}
-        material={materials.burnishedBronze}
-        position={[-0.052, 0, 0]}
-      />
+      {/* 5. Merged Sculpted Trailing Crane Legs */}
+      <mesh geometry={geometries.mergedLegsGeom} material={materials.burnishedBronzeSolid} />
 
-      {/* 6. Left (+X) and Perfectly Mirrored Right (-X) 3-Layer Sculpted Wings */}
-      {renderWingContents(leftShoulderRef, leftWristRef, leftTipMarkerRef, leftFeatherRefs, "l")}
+      {/* 6. Left (+X) and Perfectly Mirrored Right (-X) Instanced 3-Layer Sculpted Wings */}
+      {renderWingContents(
+        leftShoulderRef,
+        leftWristRef,
+        leftTipMarkerRef,
+        leftCovertInstRef,
+        leftSecondaryInstRef,
+        leftInnerPrimaryInstRef,
+        leftOuterPrimaryInstRef
+      )}
       <group scale={[-1, 1, 1]}>
-        {renderWingContents(rightShoulderRef, rightWristRef, rightTipMarkerRef, rightFeatherRefs, "r")}
+        {renderWingContents(
+          rightShoulderRef,
+          rightWristRef,
+          rightTipMarkerRef,
+          rightCovertInstRef,
+          rightSecondaryInstRef,
+          rightInnerPrimaryInstRef,
+          rightOuterPrimaryInstRef
+        )}
       </group>
     </group>
   );

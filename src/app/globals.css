@@ -21,11 +21,6 @@
   --color-patina-subtle: rgba(115, 195, 169, 0.14);
   --color-patina-glow: rgba(115, 195, 169, 0.3);
 
-  /* Synchronized Full-Page Drum-Beat Resonance Channels */
-  --drum-aura-pulse: 0;
-  --drum-shake-x: 0px;
-  --drum-shake-y: 0px;
-
   /* Hairlines & Structural Borders */
   --border-hairline: rgba(236, 230, 219, 0.09);
   --border-hairline-strong: rgba(236, 230, 219, 0.18);
@@ -81,7 +76,7 @@ html {
 body {
   min-height: 100dvh;
   margin: 0;
-  background-color: var(--color-bg-primary);
+  background-color: transparent;
   color: var(--color-ink);
   font-family: var(--font-sans);
   overflow-x: clip;
@@ -162,38 +157,18 @@ body {
   padding-inline: var(--space-container-x);
 }
 
-/* Subtle Visual Micro-Shake & Sympathetic Resonance Driven by Drum Beat
-   (Only transformed during active 320ms impulse to avoid permanent 13,000px GPU layer & fixed-positioning traps) */
-html.drum-shaking .drum-shake-stage {
-  transform: translate3d(var(--drum-shake-x, 0px), var(--drum-shake-y, 0px), 0);
-}
-
-.drum-reactive-card {
-  box-shadow: 0 0 calc(28px * var(--drum-aura-pulse, 0))
-    rgba(210, 154, 92, calc(0.28 * var(--drum-aura-pulse, 0)));
-}
-
-.drum-reactive-band {
-  box-shadow:
-    inset 0 0 calc(36px * var(--drum-aura-pulse, 0))
-      rgba(210, 154, 92, calc(0.22 * var(--drum-aura-pulse, 0))),
-    0 0 calc(28px * var(--drum-aura-pulse, 0))
-      rgba(115, 195, 169, calc(0.16 * var(--drum-aura-pulse, 0)));
-}
-
+/* Static GPU-Friendly Hero Medallion Glow (Dynamic shockwaves render on the unified sprite canvas
+   with zero `:root` custom-property recalc and zero `box-shadow` software repaints) */
 .drum-reactive-medallion {
-  box-shadow:
-    0 0 calc(64px + 48px * var(--drum-aura-pulse, 0))
-      rgba(210, 154, 92, calc(0.22 + 0.34 * var(--drum-aura-pulse, 0))),
-    0 0 calc(32px * var(--drum-aura-pulse, 0))
-      rgba(115, 195, 169, calc(0.28 * var(--drum-aura-pulse, 0)));
+  box-shadow: 0 0 64px rgba(210, 154, 92, 0.22);
 }
 
-.drum-watermark-glow {
-  filter: drop-shadow(
-    0 0 calc(18px * var(--drum-aura-pulse, 0))
-      rgba(231, 185, 128, calc(0.55 * var(--drum-aura-pulse, 0)))
-  );
+/* Pause infinite CSS animations inside offscreen sections automatically */
+[data-offscreen="true"],
+[data-offscreen="true"] *,
+[data-offscreen="true"] *::before,
+[data-offscreen="true"] *::after {
+  animation-play-state: paused !important;
 }
 
 /* Bronze Shimmer Text Sweep */
@@ -281,12 +256,12 @@ html.drum-shaking .drum-shake-stage {
   }
 }
 
-@keyframes circuit-flow {
+@keyframes circuit-beam-sweep {
   from {
-    stroke-dashoffset: 296;
+    transform: translate3d(-85%, 0, 0);
   }
   to {
-    stroke-dashoffset: 0;
+    transform: translate3d(85%, 0, 0);
   }
 }
 
@@ -372,8 +347,8 @@ html.drum-shaking .drum-shake-stage {
   animation: aurora-drift 22s ease-in-out infinite reverse;
 }
 
-.animate-circuit-flow {
-  animation: circuit-flow 6.5s linear infinite;
+.animate-circuit-beam {
+  animation: circuit-beam-sweep 6.5s linear infinite;
 }
 
 .animate-corner-scan {

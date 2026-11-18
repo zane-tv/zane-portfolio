@@ -272,7 +272,7 @@ function buildCraneGlbBuffer() {
 }
 
 async function generateZanePortrait() {
-  const srcPath = path.join(ROOT, "public/images/portrait-source.jpg");
+  const srcPath = path.join(ROOT, "scripts/assets/portrait-source.jpg");
   let hasRealSource = false;
   try {
     await fs.access(srcPath);
@@ -294,8 +294,8 @@ async function generateZanePortrait() {
 
     await sharp(srcPath)
       .extract({ left, top, width: cropSize, height: cropSize })
-      .resize(1024, 1024, { kernel: sharp.kernel.lanczos3 })
-      .webp({ quality: 96 })
+      .resize(768, 768, { kernel: sharp.kernel.lanczos3 })
+      .webp({ quality: 85, effort: 6, smartSubsample: true })
       .toFile(path.join(ROOT, "public/images/portrait.webp"));
     return;
   }
@@ -736,29 +736,6 @@ async function generateZaneProjectArtworks() {
 }
 
 async function generateTexturesAndMeta() {
-  const glowSvg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-    <defs>
-      <radialGradient id="rg" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
-        <stop offset="35%" stop-color="#f3d2a2" stop-opacity="0.65"/>
-        <stop offset="70%" stop-color="#d29a5c" stop-opacity="0.18"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <rect width="256" height="256" fill="url(#rg)"/>
-  </svg>`;
-  await sharp(Buffer.from(glowSvg)).webp({ quality: 92 }).toFile(path.join(ROOT, "public/textures/radial-glow.webp"));
-
-  const grainSvg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-    <rect width="512" height="512" fill="#808080"/>
-    <g fill="none" stroke="#a6a6a6" stroke-opacity="0.22">
-      ${Array.from({ length: 85 }, (_, i) => `<circle cx="256" cy="256" r="${12 + i * 4.2}" stroke-width="${0.6 + (i % 3) * 0.4}"/>`).join("")}
-    </g>
-  </svg>`;
-  await sharp(Buffer.from(grainSvg)).webp({ quality: 88 }).toFile(path.join(ROOT, "public/textures/bronze-grain.webp"));
-
   const ogSvg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
     <defs>
@@ -877,39 +854,17 @@ async function generateTexturesAndMeta() {
   await sharp(defaultCursorSvg).resize(32, 32).png().toFile(path.join(ROOT, "public/images/cursor-default.png"));
   await sharp(pointerCursorSvg).resize(64, 64).png().toFile(path.join(ROOT, "public/images/cursor-pointer-2x.png"));
   await sharp(pointerCursorSvg).resize(32, 32).png().toFile(path.join(ROOT, "public/images/cursor-pointer.png"));
-
-  const resumeTxt = [
-    "TRUONG VAN TIEN (ZANE / @zane-tv) — FULL-STACK, AI & DATA SOFTWARE ENGINEER",
-    "Location: Thu Duc City, Ho Chi Minh City, Viet Nam | Email: tientv.63.work@gmail.com",
-    "GitHub: https://github.com/zane-tv | LinkedIn: https://www.linkedin.com/in/zane-tv",
-    "========================================================================",
-    "SUMMARY: Full-stack software engineer with ~4 years of experience delivering",
-    "production web, AI, and data platforms across Japan, Germany, and Sweden,",
-    "plus open-source developer tools, WebGPU extensions, and interactive live stages.",
-    "",
-    "CORE STACK: TypeScript, Go, Python, PHP/Laravel, React, Next.js, Vue.js, NestJS,",
-    "PySpark, Microsoft Fabric, Delta Lake, PostgreSQL, MySQL, MongoDB, Docker, AWS.",
-    "",
-    "EDUCATION:",
-    "- University of Information Technology (VNU-HCM) — B.S. in Artificial Intelligence (2026–Present)",
-    "- Thu Duc College of Technology — Information Technology (2020–2023)",
-  ].join("\n");
-  await fs.writeFile(path.join(ROOT, "public/resume.txt"), resumeTxt, "utf8");
 }
 
 async function main() {
-  await fs.mkdir(path.join(ROOT, "public/models"), { recursive: true });
   await fs.mkdir(path.join(ROOT, "public/images/projects"), { recursive: true });
-  await fs.mkdir(path.join(ROOT, "public/textures"), { recursive: true });
   await fs.mkdir(path.join(ROOT, "src/app"), { recursive: true });
 
-  const glb = buildCraneGlbBuffer();
-  await fs.writeFile(path.join(ROOT, "public/models/crane.glb"), glb);
   await generateZanePortrait();
   await generateZaneProjectArtworks();
   await generateTexturesAndMeta();
 
-  console.log("Generated Zane's real portrait, rich project artworks, 3D GLB, and OG assets.");
+  console.log("Generated Zane's optimized portrait, project artworks, cursors, and OG assets.");
 }
 
 main().catch((err) => {

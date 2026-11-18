@@ -3,9 +3,9 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { introMotionState } from "@/store/introStore";
+import { HERO_CAMERA_FOV, HERO_CAMERA_Z } from "./cameraConstants";
 
-export const HERO_CAMERA_Z = 6.2;
-export const HERO_CAMERA_FOV = 38;
+export { HERO_CAMERA_FOV, HERO_CAMERA_Z };
 
 const _lookTarget = new THREE.Vector3();
 

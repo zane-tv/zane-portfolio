@@ -102,6 +102,9 @@ function createWingtipRibbonMeshResources() {
 export function CraneFlightController() {
   const rigRef = useRef<THREE.Group>(null);
   const assimilationHaloRef = useRef<THREE.Mesh>(null);
+  const leftRibbonMeshRef = useRef<THREE.Mesh>(null);
+  const rightRibbonMeshRef = useRef<THREE.Mesh>(null);
+  const trailPointsRef = useRef<THREE.Points>(null);
   const craneHandleRef = useRef<CraneWingtipHandle>(null);
   const spawnCursorRef = useRef(0);
   const hasPrevPosRef = useRef(false);
@@ -218,7 +221,6 @@ export function CraneFlightController() {
   }, []);
 
   useEffect(() => {
-    trailSystem.material.uniforms.uPixelRatio!.value = Math.min(window.devicePixelRatio || 1, 2);
     return () => {
       trailSystem.geometry.dispose();
       trailSystem.material.dispose();
@@ -231,184 +233,191 @@ export function CraneFlightController() {
     };
   }, [assimilationHalo, leftRibbon, rightRibbon, trailSystem]);
 
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock, viewport }, delta) => {
     const dt = Math.min(delta, 0.05);
     const t = clock.getElapsedTime();
     const u = THREE.MathUtils.clamp(introMotionState.craneFlightProgress, 0, 1);
     const enter = introMotionState.craneEnterAlpha;
     const merge = THREE.MathUtils.clamp(introMotionState.craneMergeProgress, 0, 1);
+    const craneActive = enter > 0.005 && merge < 0.996;
 
     if (enter < 0.01) {
       hasPrevPosRef.current = false;
     }
 
-    const cx = introMotionState.startWorldX;
-    const cy = introMotionState.startWorldY;
-    const drumRadiusScale = introMotionState.startWorldRadius;
+    let hasTips = false;
 
-    // 1. Free-flight foreground approach spline (u = 0 -> 0.72)
-    const splineU = THREE.MathUtils.clamp(u / 0.72, 0, 1);
-    approachSpline.getPointAt(splineU, _splinePos);
+    if (craneActive) {
+      const cx = introMotionState.startWorldX;
+      const cy = introMotionState.startWorldY;
+      const drumRadiusScale = introMotionState.startWorldRadius;
 
-    // 2. Continuous velocity-matched counter-clockwise spiral locking onto rotating Bird Slot #0!
-    const liveSlotAngle = Math.PI * 0.5 + introMotionState.birdBandRotationZ;
-    const spiralPhase = smootherstep(u, 0.34, 1.0);
-    const mergeLock = smootherstep(merge, 0.0, 0.92);
+      // 1. Free-flight foreground approach spline (u = 0 -> 0.72)
+      const splineU = THREE.MathUtils.clamp(u / 0.72, 0, 1);
+      approachSpline.getPointAt(splineU, _splinePos);
 
-    // Sweeps counter-clockwise through 1.92 radians right onto liveSlotAngle and keeps orbiting with it!
-    const orbitalAngle = liveSlotAngle - (1 - spiralPhase) * 1.92;
-    const radialTighten = smootherstep(Math.max(spiralPhase * 0.82, mergeLock), 0, 1);
-    const orbitalRadius = THREE.MathUtils.lerp(1.56, 1.31, radialTighten) * drumRadiusScale;
-    const orbitalZ = THREE.MathUtils.lerp(
-      0.34,
-      0.016 * drumRadiusScale,
-      smootherstep(Math.max(spiralPhase * 0.68, mergeLock), 0, 1)
-    );
+      // 2. Continuous velocity-matched counter-clockwise spiral locking onto rotating Bird Slot #0!
+      const liveSlotAngle = Math.PI * 0.5 + introMotionState.birdBandRotationZ;
+      const spiralPhase = smootherstep(u, 0.34, 1.0);
+      const mergeLock = smootherstep(merge, 0.0, 0.92);
 
-    const spiralX = cx + Math.cos(orbitalAngle) * orbitalRadius;
-    const spiralY = cy + Math.sin(orbitalAngle) * orbitalRadius;
+      const orbitalAngle = liveSlotAngle - (1 - spiralPhase) * 1.92;
+      const radialTighten = smootherstep(Math.max(spiralPhase * 0.82, mergeLock), 0, 1);
+      const orbitalRadius = THREE.MathUtils.lerp(1.56, 1.31, radialTighten) * drumRadiusScale;
+      const orbitalZ = THREE.MathUtils.lerp(
+        0.34,
+        0.016 * drumRadiusScale,
+        smootherstep(Math.max(spiralPhase * 0.68, mergeLock), 0, 1)
+      );
 
-    // C2 quintic blend from foreground pass into counter-clockwise spiral orbit
-    const toOrbitBlend = smootherstep(u, 0.34, 0.76);
-    const flapHeave =
-      -Math.cos(t * 4.8 * (1 - mergeLock * 0.82)) * 0.048 * (1 - toOrbitBlend * 0.5) * (1 - mergeLock);
+      const spiralX = cx + Math.cos(orbitalAngle) * orbitalRadius;
+      const spiralY = cy + Math.sin(orbitalAngle) * orbitalRadius;
 
-    _pos.set(
-      THREE.MathUtils.lerp(cx + _splinePos.x, spiralX, toOrbitBlend),
-      THREE.MathUtils.lerp(cy + _splinePos.y, spiralY, toOrbitBlend) + flapHeave,
-      THREE.MathUtils.lerp(_splinePos.z, orbitalZ, toOrbitBlend)
-    );
+      const toOrbitBlend = smootherstep(u, 0.34, 0.76);
+      const flapHeave =
+        -Math.cos(t * 4.8 * (1 - mergeLock * 0.82)) * 0.048 * (1 - toOrbitBlend * 0.5) * (1 - mergeLock);
 
-    // Compute instantaneous smooth flight tangent from actual trajectory (never stalls!)
-    if (hasPrevPosRef.current && dt > 0.0005) {
-      _velDir.subVectors(_pos, _prevPos);
-      if (_velDir.lengthSq() > 1e-7) {
-        _velDir.normalize();
+      _pos.set(
+        THREE.MathUtils.lerp(cx + _splinePos.x, spiralX, toOrbitBlend),
+        THREE.MathUtils.lerp(cy + _splinePos.y, spiralY, toOrbitBlend) + flapHeave,
+        THREE.MathUtils.lerp(_splinePos.z, orbitalZ, toOrbitBlend)
+      );
+
+      if (hasPrevPosRef.current && dt > 0.0005) {
+        _velDir.subVectors(_pos, _prevPos);
+        if (_velDir.lengthSq() > 1e-7) {
+          _velDir.normalize();
+        } else {
+          _velDir.set(-Math.sin(orbitalAngle), Math.cos(orbitalAngle), 0);
+        }
       } else {
-        _velDir.set(-Math.sin(orbitalAngle), Math.cos(orbitalAngle), 0);
+        approachSpline.getTangentAt(splineU, _velDir).normalize();
+      }
+      _prevPos.copy(_pos);
+      hasPrevPosRef.current = true;
+
+      if (rigRef.current) {
+        rigRef.current.position.copy(_pos);
+
+        _aheadDir.copy(_pos).add(_velDir);
+        _lookMatrix.lookAt(_aheadDir, _pos, _up);
+        _flightQuat.setFromRotationMatrix(_lookMatrix);
+
+        const bankAngle = -0.44 * Math.sin(toOrbitBlend * Math.PI * 0.85) * (1 - mergeLock);
+        _bankQuat.setFromAxisAngle(_forwardAxis, bankAngle);
+        _flightQuat.multiply(_bankQuat);
+
+        const cosA = Math.cos(orbitalAngle);
+        const sinA = Math.sin(orbitalAngle);
+        _xAxis.set(-cosA, -sinA, 0);
+        _yAxis.set(0, 0, 1);
+        _zAxis.set(-sinA, cosA, 0);
+        _stampMatrix.makeBasis(_xAxis, _yAxis, _zAxis);
+        _stampQuat.setFromRotationMatrix(_stampMatrix);
+
+        const poseBlend = smootherstep(Math.max(((u - 0.52) / 0.48) * 0.55, merge), 0, 0.88);
+        _finalQuat.copy(_flightQuat).slerp(_stampQuat, poseBlend);
+        rigRef.current.quaternion.slerp(_finalQuat, 0.28 + poseBlend * 0.55);
+
+        const targetReliefScale = 0.118 * drumRadiusScale;
+        const scaleEase = smootherstep(merge, 0.0, 0.86);
+        const preOrbitTaper = THREE.MathUtils.lerp(
+          0.86,
+          Math.max(0.26, targetReliefScale * 2.1),
+          smootherstep(u, 0.22, 0.96)
+        );
+        const xyScale = THREE.MathUtils.lerp(preOrbitTaper, targetReliefScale, scaleEase);
+        const zScale = THREE.MathUtils.lerp(
+          preOrbitTaper,
+          targetReliefScale * 0.18,
+          smootherstep(merge, 0.08, 0.88)
+        );
+        rigRef.current.scale.set(xyScale, xyScale, zScale);
+        rigRef.current.updateMatrixWorld(true);
+      }
+
+      if (assimilationHaloRef.current) {
+        const haloBell = Math.sin(smootherstep(merge, 0.14, 0.96) * Math.PI);
+        const haloVisible = haloBell > 0.01 && enter > 0.1;
+        assimilationHaloRef.current.visible = haloVisible;
+        if (haloVisible) {
+          assimilationHaloRef.current.position.set(_pos.x, _pos.y, _pos.z + 0.02);
+          const haloScale = (0.28 + (1 - merge) * 0.28) * drumRadiusScale;
+          assimilationHaloRef.current.scale.setScalar(haloScale);
+          assimilationHalo.mat.uniforms.uIntensity!.value = haloBell * 0.85;
+          assimilationHalo.mat.uniforms.uTime!.value = t;
+        }
+      }
+
+      const ribbonAlpha = enter * (1 - smootherstep(merge, 0.35, 0.92));
+      const ribbonsVisible = ribbonAlpha > 0.002;
+      if (leftRibbonMeshRef.current) leftRibbonMeshRef.current.visible = ribbonsVisible;
+      if (rightRibbonMeshRef.current) rightRibbonMeshRef.current.visible = ribbonsVisible;
+
+      hasTips = craneHandleRef.current?.getWingtipWorldPositions(_leftTip, _rightTip) ?? false;
+
+      if (ribbonsVisible) {
+        const updateRibbon = (
+          ribbon: ReturnType<typeof createWingtipRibbonMeshResources>,
+          tip: THREE.Vector3
+        ) => {
+          if (!hasTips || enter < 0.05 || u < 0.02) {
+            ribbon.initialized = false;
+            return;
+          }
+          if (!ribbon.initialized || tip.distanceTo(ribbon.history[0]!) > 0.65) {
+            for (const h of ribbon.history) h.copy(tip);
+            ribbon.initialized = true;
+          } else {
+            for (let i = RIBBON_NODES - 1; i > 0; i--) {
+              ribbon.history[i]!.copy(ribbon.history[i - 1]!);
+            }
+            ribbon.history[0]!.copy(tip);
+          }
+
+          const posAttr = ribbon.geometry.attributes.position as THREE.BufferAttribute;
+          let prevNx = 0;
+          let prevNy = 1;
+          for (let i = 0; i < RIBBON_NODES; i++) {
+            const pt = ribbon.history[i]!;
+            const adj = ribbon.history[Math.min(RIBBON_NODES - 1, i + 1)]!;
+            const prev = ribbon.history[Math.max(0, i - 1)]!;
+            const dx = prev.x - adj.x;
+            const dy = prev.y - adj.y;
+            const segLen = Math.hypot(dx, dy);
+            if (segLen > 1e-4) {
+              prevNx = -dy / segLen;
+              prevNy = dx / segLen;
+            }
+            const width = 0.024 * (1 - i / RIBBON_NODES) * (1 - mergeLock * 0.78);
+            ribbon.positions[i * 6] = pt.x + prevNx * width;
+            ribbon.positions[i * 6 + 1] = pt.y + prevNy * width;
+            ribbon.positions[i * 6 + 2] = pt.z;
+            ribbon.positions[i * 6 + 3] = pt.x - prevNx * width;
+            ribbon.positions[i * 6 + 4] = pt.y - prevNy * width;
+            ribbon.positions[i * 6 + 5] = pt.z;
+          }
+          posAttr.needsUpdate = true;
+        };
+
+        updateRibbon(leftRibbon, _leftTip);
+        updateRibbon(rightRibbon, _rightTip);
+        leftRibbon.material.uniforms.uOpacity!.value = ribbonAlpha;
+        rightRibbon.material.uniforms.uOpacity!.value = ribbonAlpha;
       }
     } else {
-      approachSpline.getTangentAt(splineU, _velDir).normalize();
-    }
-    _prevPos.copy(_pos);
-    hasPrevPosRef.current = true;
-
-    if (rigRef.current) {
-      rigRef.current.position.copy(_pos);
-
-      // Free-flight look quaternion
-      _aheadDir.copy(_pos).add(_velDir);
-      _lookMatrix.lookAt(_aheadDir, _pos, _up);
-      _flightQuat.setFromRotationMatrix(_lookMatrix);
-
-      // Gentle aerodynamic roll into the counter-clockwise turn, tapering smoothly into stamp pose
-      const bankAngle = -0.44 * Math.sin(toOrbitBlend * Math.PI * 0.85) * (1 - mergeLock);
-      _bankQuat.setFromAxisAngle(_forwardAxis, bankAngle);
-      _flightQuat.multiply(_bankQuat);
-
-      // Proper right-handed (`det = +1`) relief stamp basis aligned with `orbitalAngle`:
-      // +Z (beak) -> counter-clockwise tangent `(-sin a, cos a, 0)`
-      // +Y (dorsal back) -> camera `+Z (0, 0, 1)`
-      // +X (wing) -> `yAxis x zAxis = (-cos a, -sin a, 0)` => det = +1.000 (zero quaternion flip!)
-      const cosA = Math.cos(orbitalAngle);
-      const sinA = Math.sin(orbitalAngle);
-      _xAxis.set(-cosA, -sinA, 0);
-      _yAxis.set(0, 0, 1);
-      _zAxis.set(-sinA, cosA, 0);
-      _stampMatrix.makeBasis(_xAxis, _yAxis, _zAxis);
-      _stampQuat.setFromRotationMatrix(_stampMatrix);
-
-      // Silky quintic slerp from soaring 3D pose into flat Đông Sơn bronze relief orientation
-      const poseBlend = smootherstep(Math.max((u - 0.52) / 0.48 * 0.55, merge), 0, 0.88);
-      _finalQuat.copy(_flightQuat).slerp(_stampQuat, poseBlend);
-      rigRef.current.quaternion.slerp(_finalQuat, 0.28 + poseBlend * 0.55);
-
-      // Continuous progressive scale & relief depth compression matching Lead Bird #0 (`0.118 * S`)
-      const targetReliefScale = 0.118 * drumRadiusScale;
-      const scaleEase = smootherstep(merge, 0.0, 0.86);
-      const preOrbitTaper = THREE.MathUtils.lerp(
-        0.86,
-        Math.max(0.26, targetReliefScale * 2.1),
-        smootherstep(u, 0.22, 0.96)
-      );
-      const xyScale = THREE.MathUtils.lerp(preOrbitTaper, targetReliefScale, scaleEase);
-      const zScale = THREE.MathUtils.lerp(
-        preOrbitTaper,
-        targetReliefScale * 0.18,
-        smootherstep(merge, 0.08, 0.88)
-      );
-      rigRef.current.scale.set(xyScale, xyScale, zScale);
-      rigRef.current.updateMatrixWorld(true);
+      leftRibbon.initialized = false;
+      rightRibbon.initialized = false;
+      if (assimilationHaloRef.current) assimilationHaloRef.current.visible = false;
+      if (leftRibbonMeshRef.current) leftRibbonMeshRef.current.visible = false;
+      if (rightRibbonMeshRef.current) rightRibbonMeshRef.current.visible = false;
     }
 
-    // Update Golden Molten Assimilation Halo bridging 3D crane -> Bird #0 relief
-    if (assimilationHaloRef.current) {
-      const haloBell = Math.sin(smootherstep(merge, 0.14, 0.96) * Math.PI);
-      assimilationHaloRef.current.visible = haloBell > 0.01 && enter > 0.1;
-      assimilationHaloRef.current.position.set(_pos.x, _pos.y, _pos.z + 0.02);
-      const haloScale = (0.28 + (1 - merge) * 0.28) * drumRadiusScale;
-      assimilationHaloRef.current.scale.setScalar(haloScale);
-      assimilationHalo.mat.uniforms.uIntensity!.value = haloBell * 0.85;
-      assimilationHalo.mat.uniforms.uTime!.value = t;
-    }
+    const globalFade = Math.max(0, 1 - introMotionState.portraitFlightProgress * 1.2);
+    let trailDirty = false;
+    let anyAliveTrail = false;
 
-    const hasTips =
-      craneHandleRef.current?.getWingtipWorldPositions(_leftTip, _rightTip) ?? false;
-
-    const updateRibbon = (
-      ribbon: ReturnType<typeof createWingtipRibbonMeshResources>,
-      tip: THREE.Vector3
-    ) => {
-      if (!hasTips || enter < 0.05 || u < 0.02) {
-        ribbon.initialized = false;
-        return;
-      }
-      if (!ribbon.initialized || tip.distanceTo(ribbon.history[0]!) > 0.65) {
-        for (const h of ribbon.history) h.copy(tip);
-        ribbon.initialized = true;
-      } else {
-        for (let i = RIBBON_NODES - 1; i > 0; i--) {
-          ribbon.history[i]!.copy(ribbon.history[i - 1]!);
-        }
-        ribbon.history[0]!.copy(tip);
-      }
-
-      const posAttr = ribbon.geometry.attributes.position as THREE.BufferAttribute;
-      let prevNx = 0;
-      let prevNy = 1;
-      for (let i = 0; i < RIBBON_NODES; i++) {
-        const pt = ribbon.history[i]!;
-        const adj = ribbon.history[Math.min(RIBBON_NODES - 1, i + 1)]!;
-        const prev = ribbon.history[Math.max(0, i - 1)]!;
-        const dx = prev.x - adj.x;
-        const dy = prev.y - adj.y;
-        const segLen = Math.hypot(dx, dy);
-        if (segLen > 1e-4) {
-          prevNx = -dy / segLen;
-          prevNy = dx / segLen;
-        }
-        const width = 0.024 * (1 - i / RIBBON_NODES) * (1 - mergeLock * 0.78);
-        ribbon.positions[i * 6] = pt.x + prevNx * width;
-        ribbon.positions[i * 6 + 1] = pt.y + prevNy * width;
-        ribbon.positions[i * 6 + 2] = pt.z;
-        ribbon.positions[i * 6 + 3] = pt.x - prevNx * width;
-        ribbon.positions[i * 6 + 4] = pt.y - prevNy * width;
-        ribbon.positions[i * 6 + 5] = pt.z;
-      }
-      posAttr.needsUpdate = true;
-    };
-
-    updateRibbon(leftRibbon, _leftTip);
-    updateRibbon(rightRibbon, _rightTip);
-
-    const ribbonAlpha = enter * (1 - smootherstep(merge, 0.35, 0.92));
-    leftRibbon.material.uniforms.uOpacity!.value = ribbonAlpha;
-    rightRibbon.material.uniforms.uOpacity!.value = ribbonAlpha;
-
-    const posAttr = trailSystem.geometry.attributes.position as THREE.BufferAttribute;
-    const ageAttr = trailSystem.geometry.attributes.aAge as THREE.BufferAttribute;
-
-    if (enter > 0.05 && merge < 0.92 && hasTips) {
+    if (craneActive && enter > 0.05 && merge < 0.92 && hasTips) {
       for (let s = 0; s < 2; s++) {
         const src = s === 0 ? _leftTip : _rightTip;
         const idx = spawnCursorRef.current % TRAIL_COUNT;
@@ -423,28 +432,42 @@ export function CraneFlightController() {
         trailSystem.velocities[idx * 3 + 1] = -_velDir.y * 0.22 + 0.05 + (Math.random() - 0.5) * 0.16;
         trailSystem.velocities[idx * 3 + 2] = (Math.random() - 0.5) * 0.12;
         trailSystem.ages[idx] = 0;
+        trailDirty = true;
+        anyAliveTrail = true;
       }
     }
 
-    for (let i = 0; i < TRAIL_COUNT; i++) {
-      const age = trailSystem.ages[i]!;
-      if (age < 2.0) {
-        trailSystem.ages[i] = age + dt;
-        trailSystem.positions[i * 3] =
-          (trailSystem.positions[i * 3] ?? 0) + (trailSystem.velocities[i * 3] ?? 0) * dt;
-        trailSystem.positions[i * 3 + 1] =
-          (trailSystem.positions[i * 3 + 1] ?? 0) + (trailSystem.velocities[i * 3 + 1] ?? 0) * dt;
-        trailSystem.positions[i * 3 + 2] =
-          (trailSystem.positions[i * 3 + 2] ?? 0) + (trailSystem.velocities[i * 3 + 2] ?? 0) * dt;
+    if (globalFade > 0.002 || trailDirty) {
+      for (let i = 0; i < TRAIL_COUNT; i++) {
+        const age = trailSystem.ages[i]!;
+        if (age < 1.65) {
+          const nextAge = age + dt;
+          trailSystem.ages[i] = nextAge;
+          trailSystem.positions[i * 3] =
+            (trailSystem.positions[i * 3] ?? 0) + (trailSystem.velocities[i * 3] ?? 0) * dt;
+          trailSystem.positions[i * 3 + 1] =
+            (trailSystem.positions[i * 3 + 1] ?? 0) + (trailSystem.velocities[i * 3 + 1] ?? 0) * dt;
+          trailSystem.positions[i * 3 + 2] =
+            (trailSystem.positions[i * 3 + 2] ?? 0) + (trailSystem.velocities[i * 3 + 2] ?? 0) * dt;
+          trailDirty = true;
+          if (nextAge < 1.6) anyAliveTrail = true;
+        }
       }
     }
 
-    posAttr.needsUpdate = true;
-    ageAttr.needsUpdate = true;
-    trailSystem.material.uniforms.uGlobalFade!.value = Math.max(
-      0,
-      1 - introMotionState.portraitFlightProgress * 1.2
-    );
+    if (trailDirty) {
+      (trailSystem.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+      (trailSystem.geometry.attributes.aAge as THREE.BufferAttribute).needsUpdate = true;
+    }
+
+    const trailVisible = anyAliveTrail && globalFade > 0.002;
+    if (trailPointsRef.current) {
+      trailPointsRef.current.visible = trailVisible;
+    }
+    if (trailVisible) {
+      trailSystem.material.uniforms.uPixelRatio!.value = viewport.dpr;
+      trailSystem.material.uniforms.uGlobalFade!.value = globalFade;
+    }
   });
 
   return (
@@ -460,16 +483,19 @@ export function CraneFlightController() {
         frustumCulled={false}
       />
       <mesh
+        ref={leftRibbonMeshRef}
         geometry={leftRibbon.geometry}
         material={leftRibbon.material}
         frustumCulled={false}
       />
       <mesh
+        ref={rightRibbonMeshRef}
         geometry={rightRibbon.geometry}
         material={rightRibbon.material}
         frustumCulled={false}
       />
       <points
+        ref={trailPointsRef}
         geometry={trailSystem.geometry}
         material={trailSystem.material}
         frustumCulled={false}

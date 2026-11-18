@@ -21,8 +21,13 @@ export function SiteHeader() {
   const { config, ui } = getLocalizedPortfolio(locale);
 
   useEffect(() => {
+    let lastScrolled: boolean | null = null;
     const onScroll = () => {
-      setIsScrolled(window.scrollY > 36);
+      const next = window.scrollY > 36;
+      if (next !== lastScrolled) {
+        lastScrolled = next;
+        setIsScrolled(next);
+      }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();

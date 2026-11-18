@@ -171,6 +171,7 @@ interface IntroStoreState {
   heroInView: boolean;
   replayCount: number;
   skipSignal: number;
+  skippedAtReplayCount: number;
 
   setPhase: (phase: IntroPhase) => void;
   setReducedMotion: (reduced: boolean) => void;
@@ -194,6 +195,7 @@ export const useIntroStore = create<IntroStoreState>((set) => ({
   heroInView: true,
   replayCount: 0,
   skipSignal: 0,
+  skippedAtReplayCount: -1,
 
   setPhase: (phase) =>
     set({
@@ -211,6 +213,7 @@ export const useIntroStore = create<IntroStoreState>((set) => ({
   requestSkip: () =>
     set((s) => ({
       skipSignal: s.skipSignal + 1,
+      skippedAtReplayCount: s.replayCount,
       phase: "idle",
       isIntroComplete: true,
     })),

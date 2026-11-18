@@ -10,6 +10,8 @@ import {
   createLozengeMeanderGeometry,
   createSawtoothRingGeometry,
   createTangentChainLineGeometry,
+  mergeLineSegmentGeometries,
+  mergeStaticMeshGeometries,
 } from "@/lib/dongSonGeometry";
 import { introMotionState, useIntroStore } from "@/store/introStore";
 
@@ -44,6 +46,16 @@ export function DrumRings() {
     const innerMeander = createLozengeMeanderGeometry(24, 0.505, 0.605);
     const innerChain = createTangentChainLineGeometry(INNER_BOSS_COUNT, 0.73, 0.058, 22);
     const innerSawtooth = createSawtoothRingGeometry(52, 0.86, 0.96);
+    const mergedInnerLines = mergeLineSegmentGeometries([
+      innerFeathers,
+      innerMeander,
+      innerChain,
+      innerSawtooth,
+    ]);
+    innerFeathers.dispose();
+    innerMeander.dispose();
+    innerChain.dispose();
+    innerSawtooth.dispose();
 
     const birdReliefGeom = createLacBirdReliefGeometry(0.00385);
     const birdEngravingLines = createLacBirdFriezeEngravingGeometry(BIRD_COUNT, 1.31, 0.00385);
@@ -71,10 +83,19 @@ export function DrumRings() {
       [1.605, 0.0034], // Simple, airy outer halo ring requested by user
     ];
 
-    const innerTorusGeoms = innerRingSpecs.map(([r, tube]) => new THREE.TorusGeometry(r, tube, 8, 112));
-    const outerTorusGeoms = outerRingSpecs.map(([r, tube]) => new THREE.TorusGeometry(r, tube, 8, 128));
+    const rawInnerTorus = innerRingSpecs.map(([r, tube]) => new THREE.TorusGeometry(r, tube, 8, 112));
+    const mergedInnerTorusGeom = mergeStaticMeshGeometries(
+      rawInnerTorus.map((geometry) => ({ geometry }))
+    );
+    rawInnerTorus.forEach((g) => g.dispose());
 
-    const innerCastBronze = new THREE.MeshPhysicalMaterial({
+    const rawOuterTorus = outerRingSpecs.map(([r, tube]) => new THREE.TorusGeometry(r, tube, 8, 128));
+    const mergedOuterTorusGeom = mergeStaticMeshGeometries(
+      rawOuterTorus.map((geometry) => ({ geometry }))
+    );
+    rawOuterTorus.forEach((g) => g.dispose());
+
+    const innerCastBronze = new THREE.MeshStandardMaterial({
       color: new THREE.Color("#d8a162"),
       emissive: new THREE.Color("#7a4a16"),
       emissiveIntensity: 0.24,
@@ -84,7 +105,7 @@ export function DrumRings() {
       opacity: 0,
     });
 
-    const outerCastBronze = new THREE.MeshPhysicalMaterial({
+    const outerCastBronze = new THREE.MeshStandardMaterial({
       color: new THREE.Color("#d9a365"),
       emissive: new THREE.Color("#875319"),
       emissiveIntensity: 0.24,
@@ -149,10 +170,7 @@ export function DrumRings() {
     });
 
     return {
-      innerFeathers,
-      innerMeander,
-      innerChain,
-      innerSawtooth,
+      mergedInnerLines,
       birdReliefGeom,
       birdEngravingLines,
       outerMeander,
@@ -161,8 +179,8 @@ export function DrumRings() {
       outerCombGeom,
       beadSphereGeom,
       socketRingGeom,
-      innerTorusGeoms,
-      outerTorusGeoms,
+      mergedInnerTorusGeom,
+      mergedOuterTorusGeom,
       innerCastBronze,
       outerCastBronze,
       birdReliefGold,
@@ -229,10 +247,7 @@ export function DrumRings() {
     }
 
     return () => {
-      resources.innerFeathers.dispose();
-      resources.innerMeander.dispose();
-      resources.innerChain.dispose();
-      resources.innerSawtooth.dispose();
+      resources.mergedInnerLines.dispose();
       resources.birdReliefGeom.dispose();
       resources.birdEngravingLines.dispose();
       resources.outerMeander.dispose();
@@ -241,8 +256,8 @@ export function DrumRings() {
       resources.outerCombGeom.dispose();
       resources.beadSphereGeom.dispose();
       resources.socketRingGeom.dispose();
-      resources.innerTorusGeoms.forEach((g) => g.dispose());
-      resources.outerTorusGeoms.forEach((g) => g.dispose());
+      resources.mergedInnerTorusGeom.dispose();
+      resources.mergedOuterTorusGeom.dispose();
       resources.innerCastBronze.dispose();
       resources.outerCastBronze.dispose();
       resources.birdReliefGold.dispose();
@@ -259,6 +274,11 @@ export function DrumRings() {
     const dt = Math.min(delta, 0.05);
     const t = clock.getElapsedTime();
     const reveal = introMotionState.drumRevealProgress;
+    if (reveal < 0.005) {
+      if (birdFlockGroupRef.current) birdFlockGroupRef.current.rotation.z = 0;
+      introMotionState.birdBandRotationZ = 0;
+      return;
+    }
     const merge = introMotionState.craneMergeProgress;
     const haloMorph = introMotionState.drumHaloMorph;
     const stampFlash = Math.sin(Math.min(1, introMotionState.craneStampShockwave * 1.2) * Math.PI);
@@ -337,10 +357,7 @@ export function DrumRings() {
     <group>
       {/* 1. Inner Medallion Engravings (Scene 03 Đông Sơn Drum Center) */}
       <group ref={innerRingGroupRef} position={[0, 0, 0.004]}>
-        <lineSegments geometry={resources.innerFeathers} material={resources.innerEngraveMat} />
-        <lineSegments geometry={resources.innerMeander} material={resources.innerEngraveMat} />
-        <lineSegments geometry={resources.innerChain} material={resources.innerEngraveMat} />
-        <lineSegments geometry={resources.innerSawtooth} material={resources.innerEngraveMat} />
+        <lineSegments geometry={resources.mergedInnerLines} material={resources.innerEngraveMat} />
         <instancedMesh
           ref={innerCombInstRef}
           args={[resources.innerCombGeom, resources.innerCastBronze, INNER_COMB_COUNT]}
@@ -349,16 +366,12 @@ export function DrumRings() {
           ref={innerBossInstRef}
           args={[resources.beadSphereGeom, resources.innerCastBronze, INNER_BOSS_COUNT]}
         />
-        {resources.innerTorusGeoms.map((geom, idx) => (
-          <mesh key={`in-torus-${idx}`} geometry={geom} material={resources.innerCastBronze} />
-        ))}
+        <mesh geometry={resources.mergedInnerTorusGeom} material={resources.innerCastBronze} />
       </group>
 
       {/* 2. Slim Hairline Bezel, Fine Comb & Patina Sawtooth Whisper */}
       <group ref={bezelAndCombGroupRef}>
-        {resources.outerTorusGeoms.map((geom, idx) => (
-          <mesh key={`out-torus-${idx}`} geometry={geom} material={resources.outerCastBronze} />
-        ))}
+        <mesh geometry={resources.mergedOuterTorusGeom} material={resources.outerCastBronze} />
         <instancedMesh
           ref={outerCombInstRef}
           args={[resources.outerCombGeom, resources.outerCastBronze, OUTER_COMB_COUNT]}

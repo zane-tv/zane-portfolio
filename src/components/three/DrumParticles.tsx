@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { introMotionState, useIntroStore } from "@/store/introStore";
@@ -18,6 +18,8 @@ interface DrumParticlesProps {
  */
 export function DrumParticles({ anchorPositionRef, anchorScaleRef }: DrumParticlesProps) {
   const isMobile = useIntroStore((s) => s.isMobileViewport);
+  const ambientPointsRef = useRef<THREE.Points>(null);
+  const morphPointsRef = useRef<THREE.Points>(null);
   const ambientCount = isMobile ? 80 : 200;
   const morphCount = isMobile ? 240 : 580;
 
@@ -199,9 +201,6 @@ export function DrumParticles({ anchorPositionRef, anchorScaleRef }: DrumParticl
   }, [morphCount]);
 
   useEffect(() => {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    ambientSystem.material.uniforms.uPixelRatio!.value = dpr;
-    morphSystem.material.uniforms.uPixelRatio!.value = dpr;
     return () => {
       ambientSystem.geometry.dispose();
       ambientSystem.material.dispose();
@@ -210,40 +209,55 @@ export function DrumParticles({ anchorPositionRef, anchorScaleRef }: DrumParticl
     };
   }, [ambientSystem, morphSystem]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, viewport }) => {
     const t = clock.getElapsedTime();
+    const liveDpr = viewport.dpr;
 
-    // Update ambient dust
-    ambientSystem.material.uniforms.uTime!.value = t;
-    ambientSystem.material.uniforms.uAlpha!.value = introMotionState.ambientDustAlpha;
-    (ambientSystem.material.uniforms.uPointer!.value as THREE.Vector2).set(
-      introMotionState.pointerSmoothX,
-      introMotionState.pointerSmoothY
-    );
+    const ambientAlpha = introMotionState.ambientDustAlpha;
+    if (ambientPointsRef.current) {
+      ambientPointsRef.current.visible = ambientAlpha > 0.002;
+    }
+    if (ambientAlpha > 0.002) {
+      ambientSystem.material.uniforms.uPixelRatio!.value = liveDpr;
+      ambientSystem.material.uniforms.uTime!.value = t;
+      ambientSystem.material.uniforms.uAlpha!.value = ambientAlpha;
+      (ambientSystem.material.uniforms.uPointer!.value as THREE.Vector2).set(
+        introMotionState.pointerSmoothX,
+        introMotionState.pointerSmoothY
+      );
+    }
 
-    // Update crane-to-drum orbital particles
+    const morphOpacity = introMotionState.morphParticlesOpacity;
+    if (morphPointsRef.current) {
+      morphPointsRef.current.visible = morphOpacity > 0.002;
+    }
     const anchor = anchorPositionRef.current;
-    morphSystem.material.uniforms.uTime!.value = t;
-    morphSystem.material.uniforms.uMorph!.value = introMotionState.morphParticlesProgress;
-    morphSystem.material.uniforms.uOpacity!.value = introMotionState.morphParticlesOpacity;
-    morphSystem.material.uniforms.uHaloMorph!.value = introMotionState.drumHaloMorph;
-    morphSystem.material.uniforms.uScale!.value = anchorScaleRef.current;
-    morphSystem.material.uniforms.uPulse!.value = introMotionState.drumPulse;
-
     const uPrev = morphSystem.material.uniforms.uPrevAnchor!.value as THREE.Vector3;
     const uCurr = morphSystem.material.uniforms.uAnchor!.value as THREE.Vector3;
     uPrev.lerp(uCurr, 0.22);
     uCurr.copy(anchor);
+
+    if (morphOpacity > 0.002) {
+      morphSystem.material.uniforms.uPixelRatio!.value = liveDpr;
+      morphSystem.material.uniforms.uTime!.value = t;
+      morphSystem.material.uniforms.uMorph!.value = introMotionState.morphParticlesProgress;
+      morphSystem.material.uniforms.uOpacity!.value = morphOpacity;
+      morphSystem.material.uniforms.uHaloMorph!.value = introMotionState.drumHaloMorph;
+      morphSystem.material.uniforms.uScale!.value = anchorScaleRef.current;
+      morphSystem.material.uniforms.uPulse!.value = introMotionState.drumPulse;
+    }
   });
 
   return (
     <>
       <points
+        ref={ambientPointsRef}
         geometry={ambientSystem.geometry}
         material={ambientSystem.material}
         frustumCulled={false}
       />
       <points
+        ref={morphPointsRef}
         geometry={morphSystem.geometry}
         material={morphSystem.material}
         frustumCulled={false}

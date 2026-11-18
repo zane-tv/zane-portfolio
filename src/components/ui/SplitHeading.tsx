@@ -195,7 +195,7 @@ export function SplitHeading({ id, text, className }: SplitHeadingProps) {
             key={`${idx}-${line}`}
             className="block overflow-hidden pt-[0.08em] pb-[0.16em] -mt-[0.08em] -mb-[0.16em]"
           >
-            <span data-split-line className="block origin-bottom-left will-change-transform">
+            <span data-split-line className="block origin-bottom-left">
               {line}
             </span>
           </span>

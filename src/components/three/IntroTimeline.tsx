@@ -10,7 +10,7 @@ import {
   triggerDrumStrike,
   useIntroStore,
 } from "@/store/introStore";
-import { HERO_CAMERA_FOV, HERO_CAMERA_Z } from "./CameraRig";
+import { HERO_CAMERA_FOV, HERO_CAMERA_Z } from "./cameraConstants";
 
 interface IntroTimelineProps {
   heroSectionRef: React.RefObject<HTMLElement | null>;
@@ -93,16 +93,30 @@ export function IntroTimeline({
     introMotionState.hasMeasuredTarget = true;
   }, [heroSectionRef, portraitSlotRef, setIsMobileViewport]);
 
-  // Synchronize DOM portrait handoff & 3D pointer tilt at 60–120Hz
+  // Synchronize DOM portrait handoff & 3D pointer tilt at 60–120Hz (deduplicated & paused when Hero offscreen)
   useEffect(() => {
+    let lastOpacity = "";
+    let lastTransform = "";
+
     const syncDomLayers = () => {
       const wrap = portraitDomWrapRef.current;
-      if (wrap) {
-        const alpha = webglSupported && !webglContextLost ? introMotionState.domHandoffAlpha : 1;
-        wrap.style.opacity = alpha.toFixed(3);
-        wrap.style.transform = `perspective(900px) rotateY(${(
-          introMotionState.pointerSmoothX * 3.4
-        ).toFixed(2)}deg) rotateX(${(-introMotionState.pointerSmoothY * 2.8).toFixed(2)}deg)`;
+      if (!wrap) return;
+
+      const alpha = webglSupported && !webglContextLost ? introMotionState.domHandoffAlpha : 1;
+      const nextOpacity = alpha.toFixed(3);
+      if (nextOpacity !== lastOpacity) {
+        lastOpacity = nextOpacity;
+        wrap.style.opacity = nextOpacity;
+      }
+
+      if (!useIntroStore.getState().heroInView) return;
+
+      const nextTransform = `perspective(900px) rotateY(${(
+        introMotionState.pointerSmoothX * 3.4
+      ).toFixed(2)}deg) rotateX(${(-introMotionState.pointerSmoothY * 2.8).toFixed(2)}deg)`;
+      if (nextTransform !== lastTransform) {
+        lastTransform = nextTransform;
+        wrap.style.transform = nextTransform;
       }
     };
     gsap.ticker.add(syncDomLayers);
@@ -168,7 +182,14 @@ export function IntroTimeline({
     const revealItems = heroEl.querySelectorAll<HTMLElement>("[data-hero-reveal]");
     tlRef.current?.kill();
 
-    if ((prefersReduced && replayCount === 0) || !webglSupported || webglContextLost) {
+    const skippedCurrentRun = useIntroStore.getState().skippedAtReplayCount === replayCount;
+
+    if (
+      skippedCurrentRun ||
+      (prefersReduced && replayCount === 0) ||
+      !webglSupported ||
+      webglContextLost
+    ) {
       snapIntroMotionChannelsToIdle();
       gsap.set(revealItems, { autoAlpha: 1, y: 0, clipPath: "inset(0% 0% 0% 0%)" });
       emitPhase("idle");
@@ -418,7 +439,7 @@ export function IntroTimeline({
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && lastPhaseRef.current !== "idle") {
+      if (e.key === "Escape" && !useIntroStore.getState().isIntroComplete) {
         useIntroStore.getState().requestSkip();
       }
     };

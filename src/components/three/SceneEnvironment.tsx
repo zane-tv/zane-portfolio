@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { introMotionState } from "@/store/introStore";
-import { HERO_CAMERA_Z } from "./CameraRig";
+import { HERO_CAMERA_Z } from "./cameraConstants";
 
 const BACKDROP_Z = -4.2;
 const BACKDROP_PROJ_SCALE = (HERO_CAMERA_Z - BACKDROP_Z) / HERO_CAMERA_Z;
@@ -190,8 +190,12 @@ export function SceneEnvironment() {
     if (ghostRingRef.current) {
       const fadeOut = 1 - Math.min(1, introMotionState.drumRevealProgress * 1.4);
       const mat = ghostRingRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = awake * 0.095 * fadeOut;
-      ghostRingRef.current.rotation.z = t * 0.05;
+      const nextOpacity = awake * 0.095 * fadeOut;
+      mat.opacity = nextOpacity;
+      ghostRingRef.current.visible = nextOpacity > 0.001;
+      if (nextOpacity > 0.001) {
+        ghostRingRef.current.rotation.z = t * 0.05;
+      }
     }
 
     // Update volumetric solar corona backdrop uniforms (perspective-projected concentrically onto z = -4.2)

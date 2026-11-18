@@ -128,10 +128,12 @@ export function PortraitReveal() {
   useFrame(({ clock }) => {
     const reveal = introMotionState.portraitRevealProgress;
     const handoff = introMotionState.domHandoffAlpha;
+    const visible = reveal > 0.002 && handoff < 0.998;
 
     if (meshRef.current) {
-      meshRef.current.visible = reveal > 0.002 && handoff < 0.998;
+      meshRef.current.visible = visible;
     }
+    if (!visible) return;
 
     resources.material.uniforms.uReveal!.value = reveal;
     resources.material.uniforms.uHandoff!.value = handoff;

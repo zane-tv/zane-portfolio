@@ -25,7 +25,7 @@ export default async function HomePage() {
       <SiteHeader />
       <IntroSkipControl />
       <ScrollMotionController />
-      <div className="drum-shake-stage relative z-10">
+      <div className="drum-shake-stage relative">
         <main id="main-content">
           <HeroSection />
           <KineticHeritageFrieze />

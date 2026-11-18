@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import clsx from "clsx";
 import { getLocalizedPortfolio, type UiDictionary } from "@/config/i18n";
@@ -26,31 +26,70 @@ function ProjectEditorialSpread({
   index: number;
   ui: UiDictionary["projectsUi"];
 }) {
+  const tiltHostRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+  const rafRef = useRef(0);
   const [hovered, setHovered] = useState(false);
   const reducedMotion = useIntroStore((s) => s.reducedMotion);
   const isReversed = index % 2 === 1;
 
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== 0) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
+
+  const onPointerEnter = () => {
+    setHovered(true);
+    if (reducedMotion) return;
+    if (tiltHostRef.current) {
+      rectRef.current = tiltHostRef.current.getBoundingClientRect();
+    }
+    if (frameRef.current) {
+      frameRef.current.style.transition = "transform 110ms ease-out";
+    }
+  };
+
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     if (reducedMotion || !frameRef.current) return;
-    const rect = frameRef.current.getBoundingClientRect();
-    const nx = (e.clientX - rect.left) / Math.max(1, rect.width) - 0.5;
-    const ny = (e.clientY - rect.top) / Math.max(1, rect.height) - 0.5;
-    frameRef.current.style.transform = `perspective(1200px) rotateY(${(nx * 4.5).toFixed(
-      2
-    )}deg) rotateX(${(-ny * 3.8).toFixed(2)}deg)`;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    if (rafRef.current !== 0) return;
+
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = 0;
+      const frame = frameRef.current;
+      if (!frame) return;
+      const rect = rectRef.current ?? tiltHostRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      rectRef.current = rect;
+      const nx = (clientX - rect.left) / Math.max(1, rect.width) - 0.5;
+      const ny = (clientY - rect.top) / Math.max(1, rect.height) - 0.5;
+      frame.style.transform = `perspective(1200px) rotateY(${(nx * 4.5).toFixed(
+        2
+      )}deg) rotateX(${(-ny * 3.8).toFixed(2)}deg)`;
+    });
   };
 
   const onPointerLeave = () => {
     setHovered(false);
+    if (rafRef.current !== 0) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    rectRef.current = null;
     if (!frameRef.current) return;
+    frameRef.current.style.transition = "transform 500ms cubic-bezier(0.16, 1, 0.3, 1)";
     frameRef.current.style.transform = "perspective(1200px) rotateY(0deg) rotateX(0deg)";
   };
 
   return (
     <article
       data-scroll-reveal
-      onPointerEnter={() => setHovered(true)}
+      onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
       className="group relative grid grid-cols-1 items-center gap-8 border-t border-[var(--border-hairline)] py-14 lg:grid-cols-12 lg:gap-12 lg:py-20"
     >
@@ -68,6 +107,7 @@ function ProjectEditorialSpread({
 
       {/* ARTWORK WINDOW WITH BRONZE CURTAIN REVEAL & ĐÔNG SƠN CORNER-BRACKET LIGHT SCAN */}
       <div
+        ref={tiltHostRef}
         className={clsx(
           "relative z-10 lg:col-span-7",
           isReversed && "lg:order-2"
@@ -76,7 +116,7 @@ function ProjectEditorialSpread({
         <div
           ref={frameRef}
           onPointerMove={onPointerMove}
-          className="relative p-3 transition-transform duration-500 ease-out"
+          className="relative p-3"
         >
           {/* Four Chiseled Đông Sơn Corner Brackets with Hover Glow Ignition */}
           <span
@@ -110,7 +150,6 @@ function ProjectEditorialSpread({
                 src={project.thumbnail}
                 alt={project.thumbnailAlt}
                 fill
-                unoptimized
                 sizes="(max-width: 1024px) 100vw, 58vw"
                 className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
               />
@@ -131,7 +170,7 @@ function ProjectEditorialSpread({
               data-bronze-sheen
               aria-hidden="true"
               style={{ opacity: 0 }}
-              className="pointer-events-none absolute inset-0 z-20 bg-[linear-gradient(108deg,transparent_28%,rgba(246,213,155,0.18)_48%,rgba(115,195,169,0.12)_54%,transparent_72%)] will-change-transform"
+              className="pointer-events-none absolute inset-0 z-20 bg-[linear-gradient(108deg,transparent_28%,rgba(246,213,155,0.18)_48%,rgba(115,195,169,0.12)_54%,transparent_72%)]"
             />
 
             {/* Top Telemetry Overlay with Scramble Decode */}

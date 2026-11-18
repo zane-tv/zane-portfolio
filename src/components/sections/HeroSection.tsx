@@ -24,22 +24,24 @@ const ExperienceCanvas = dynamic(
  */
 export function IntroSkipControl() {
   const isIntroComplete = useIntroStore((s) => s.isIntroComplete);
+  const heroInView = useIntroStore((s) => s.heroInView);
   const webglSupported = useIntroStore((s) => s.webglSupported);
   const webglContextLost = useIntroStore((s) => s.webglContextLost);
   const requestSkip = useIntroStore((s) => s.requestSkip);
   const locale = useLocaleStore((s) => s.locale);
   const { ui } = getLocalizedPortfolio(locale);
 
-  if (!webglSupported || webglContextLost || isIntroComplete) {
+  if (!webglSupported || webglContextLost || isIntroComplete || !heroInView) {
     return null;
   }
 
   return (
-    <div className="fixed right-5 bottom-6 z-50 sm:right-8 sm:bottom-8">
+    <div className="fixed right-5 bottom-[max(1.5rem,calc(env(safe-area-inset-bottom)+0.75rem))] z-50 sm:right-8 sm:bottom-8">
       <button
         type="button"
+        data-dedicated-drum-trigger
         onClick={requestSkip}
-        className="pointer-events-auto inline-flex cursor-pointer items-center gap-2 border border-[rgba(210,154,92,0.48)] bg-[#080b0f]/82 px-3.5 py-2 font-mono text-[10px] tracking-[0.2em] text-[var(--color-ink-soft)] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.55)] backdrop-blur-md transition-all hover:border-[var(--color-bronze-bright)] hover:text-[var(--color-ink)]"
+        className="pointer-events-auto inline-flex cursor-pointer items-center gap-2 border border-[rgba(210,154,92,0.48)] bg-[#080b0f]/82 px-3.5 py-2 font-mono text-[10px] tracking-[0.2em] text-[var(--color-ink-soft)] uppercase shadow-[0_8px_24px_rgba(0,0,0,0.55)] backdrop-blur-md transition-colors hover:border-[var(--color-bronze-bright)] hover:text-[var(--color-ink)]"
       >
         <span>{ui.hero.skipIntro}</span>
         <span className="hidden text-[var(--color-bronze)] sm:inline">[ESC]</span>
@@ -55,6 +57,7 @@ export function HeroSection() {
 
   const [titleIndex, setTitleIndex] = useState(0);
   const isIntroComplete = useIntroStore((s) => s.isIntroComplete);
+  const heroInView = useIntroStore((s) => s.heroInView);
   const webglSupported = useIntroStore((s) => s.webglSupported);
   const webglContextLost = useIntroStore((s) => s.webglContextLost);
   const reducedMotion = useIntroStore((s) => s.reducedMotion);
@@ -64,12 +67,13 @@ export function HeroSection() {
   const { identity, links } = config;
 
   useEffect(() => {
-    if (!isIntroComplete || reducedMotion) return;
+    if (!isIntroComplete || reducedMotion || !heroInView) return;
     const id = window.setInterval(() => {
+      if (document.hidden) return;
       setTitleIndex((prev) => (prev + 1) % identity.titles.length);
     }, 3200);
     return () => window.clearInterval(id);
-  }, [identity.titles.length, isIntroComplete, reducedMotion]);
+  }, [heroInView, identity.titles.length, isIntroComplete, reducedMotion]);
 
   const showStaticHalo = !webglSupported || webglContextLost;
 
@@ -144,7 +148,13 @@ export function HeroSection() {
             data-hero-reveal
             className="mt-5 flex min-h-[2.6rem] items-center gap-3.5 text-[var(--color-bronze)]"
           >
-            <SunFourteenIcon className="animate-spin-cw h-5 w-5 text-[var(--color-bronze)] drop-shadow-[0_0_8px_rgba(210,154,92,0.5)]" />
+            <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute -inset-1.5 rounded-full bg-[radial-gradient(circle,rgba(210,154,92,0.42)_0%,transparent_72%)]"
+              />
+              <SunFourteenIcon className="animate-spin-cw h-5 w-5 text-[var(--color-bronze)]" />
+            </span>
             <span className="border border-[var(--border-bronze)] bg-[rgba(210,154,92,0.1)] px-2 py-0.5 font-mono text-[10px] tracking-[0.16em] text-[var(--color-bronze-bright)]">
               0{titleIndex + 1}/0{identity.titles.length}
             </span>
@@ -307,7 +317,7 @@ export function HeroSection() {
                   src={identity.portrait.src}
                   alt={identity.portrait.alt}
                   fill
-                  priority
+                  preload
                   unoptimized
                   sizes="(max-width: 768px) 236px, 318px"
                   className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03] select-none"

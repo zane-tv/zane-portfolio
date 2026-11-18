@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/DongSonMotifs";
 import { SplitHeading } from "@/components/ui/SplitHeading";
 
+const HORIZON_ARC_MASK_OUTER = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 560 180' fill='none'%3E%3Cpath d='M 74 132 Q 272 14 486 92' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")`;
+const HORIZON_ARC_MASK_INNER = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 560 180' fill='none'%3E%3Cpath d='M 112 148 Q 282 46 446 112' stroke='white' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E")`;
+
 /**
  * Animated Soaring Chim Lạc SVG with active upper/lower wingbeat & organic horizon glide!
  */
@@ -264,7 +267,7 @@ export function ContactSection() {
                 strokeWidth="1.25"
               />
 
-              {/* Animated Streaming Emerald-Patina & Golden Flight Trajectory Arcs */}
+              {/* Static Flight Trajectory Guide Arc */}
               <path
                 d="M 74 132 Q 272 14 486 92"
                 stroke="var(--color-patina)"
@@ -272,40 +275,76 @@ export function ContactSection() {
                 strokeDasharray="3 7"
                 strokeWidth="1.1"
               />
-              <path
-                d="M 74 132 Q 272 14 486 92"
-                stroke="#a8f0da"
-                strokeWidth="1.8"
-                strokeDasharray="28 240"
-                className="animate-circuit-flow"
-              />
-              <path
-                d="M 112 148 Q 282 46 446 112"
-                stroke="var(--color-bronze-bright)"
-                strokeWidth="1.5"
-                strokeDasharray="22 220"
-                className="animate-circuit-flow"
-              />
             </svg>
 
-            {/* Three Wing-Flapping & Soaring Chim Lạc in Multi-Depth Parallax */}
+            {/* Compositor-Only Streaming Emerald-Patina & Golden Flight Trajectory Pulses (Zero `stroke-dashoffset` Paint!) */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+              style={{
+                WebkitMaskImage: HORIZON_ARC_MASK_OUTER,
+                maskImage: HORIZON_ARC_MASK_OUTER,
+                WebkitMaskSize: "100% 100%",
+                maskSize: "100% 100%",
+              }}
+            >
+              <span className="animate-circuit-beam block h-full w-full bg-[linear-gradient(90deg,transparent_42%,#a8f0da_50%,transparent_58%)] will-change-transform" />
+            </span>
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 overflow-hidden"
+              style={{
+                WebkitMaskImage: HORIZON_ARC_MASK_INNER,
+                maskImage: HORIZON_ARC_MASK_INNER,
+                WebkitMaskSize: "100% 100%",
+                maskSize: "100% 100%",
+              }}
+            >
+              <span className="animate-circuit-beam block h-full w-full bg-[linear-gradient(90deg,transparent_42%,#f6d59b_50%,transparent_58%)] will-change-transform" />
+            </span>
+
+            {/* Three Wing-Flapping & Soaring Chim Lạc with Zero-Filter Radial Halo Backings */}
             <div data-parallax-y="-0.14" className="pointer-events-none absolute top-11 left-[18%] sm:left-[24%]">
-              <AnimatedHorizonLacBird
-                delayMs={450}
-                className="animate-lac-soar h-8 w-16 text-[var(--color-bronze)] opacity-80 drop-shadow-[0_0_10px_rgba(210,154,92,0.4)]"
-              />
+              <div
+                style={{ animationDelay: "450ms" }}
+                className="animate-lac-soar relative"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -inset-3 -z-10 rounded-full bg-[radial-gradient(circle,rgba(210,154,92,0.34)_0%,transparent_72%)]"
+                />
+                <AnimatedHorizonLacBird
+                  delayMs={450}
+                  className="h-8 w-16 text-[var(--color-bronze)] opacity-80"
+                />
+              </div>
             </div>
             <div data-parallax-y="-0.26" className="pointer-events-none absolute top-1">
-              <AnimatedHorizonLacBird
-                delayMs={0}
-                className="animate-lac-soar h-13 w-26 text-[var(--color-bronze-bright)] drop-shadow-[0_0_22px_rgba(246,213,155,0.65)] transition-transform duration-500 group-hover:scale-110"
-              />
+              <div className="animate-lac-soar relative transition-transform duration-500 group-hover:scale-110">
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -inset-5 -z-10 rounded-full bg-[radial-gradient(circle,rgba(246,213,155,0.45)_0%,transparent_70%)]"
+                />
+                <AnimatedHorizonLacBird
+                  delayMs={0}
+                  className="h-13 w-26 text-[var(--color-bronze-bright)]"
+                />
+              </div>
             </div>
             <div data-parallax-y="-0.1" className="pointer-events-none absolute top-13 right-[18%] sm:right-[24%]">
-              <AnimatedHorizonLacBird
-                delayMs={900}
-                className="animate-lac-soar h-7 w-14 text-[var(--color-patina)] opacity-75 drop-shadow-[0_0_10px_rgba(115,195,169,0.4)]"
-              />
+              <div
+                style={{ animationDelay: "900ms" }}
+                className="animate-lac-soar relative"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -inset-3 -z-10 rounded-full bg-[radial-gradient(circle,rgba(115,195,169,0.34)_0%,transparent_72%)]"
+                />
+                <AnimatedHorizonLacBird
+                  delayMs={900}
+                  className="h-7 w-14 text-[var(--color-patina)] opacity-75"
+                />
+              </div>
             </div>
           </button>
         </div>

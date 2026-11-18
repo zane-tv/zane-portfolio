@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getLocalizedPortfolio } from "@/config/i18n";
 import { useLocaleStore } from "@/store/localeStore";
 import type { ExpertiseCategory, ExpertiseMotionStyle } from "@/types/portfolio";
@@ -32,7 +32,9 @@ function DisciplineKineticDiagram({
                 key={layer}
                 style={{
                   transform: `translate(${shiftX.toFixed(1)}px, ${(-lift + 18).toFixed(1)}px)`,
-                  transition: "transform 420ms cubic-bezier(0.16, 1, 0.3, 1)",
+                  transition: active
+                    ? "transform 130ms ease-out"
+                    : "transform 420ms cubic-bezier(0.16, 1, 0.3, 1)",
                 }}
               >
                 <polygon
@@ -134,7 +136,9 @@ function DisciplineKineticDiagram({
             style={{
               transformOrigin: "64px 46px",
               transform: `rotate(${active ? 42 + px * 25 : 0}deg)`,
-              transition: "transform 650ms cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: active
+                ? "transform 150ms ease-out"
+                : "transform 650ms cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
             <circle cx="64" cy="46" r="33" stroke="var(--color-bronze)" strokeOpacity="0.42" />
@@ -145,7 +149,9 @@ function DisciplineKineticDiagram({
             style={{
               transformOrigin: "64px 46px",
               transform: `rotate(${active ? -48 - py * 25 : 0}deg)`,
-              transition: "transform 650ms cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: active
+                ? "transform 150ms ease-out"
+                : "transform 650ms cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
             <circle
@@ -187,7 +193,9 @@ function DisciplineKineticDiagram({
           <g
             style={{
               transform: `translateX(${((active ? 16 : 0) + px * 18).toFixed(1)}px)`,
-              transition: "transform 360ms cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: active
+                ? "transform 120ms ease-out"
+                : "transform 360ms cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           >
             <rect
@@ -207,39 +215,84 @@ function DisciplineKineticDiagram({
 }
 
 function DisciplineCard({ category }: { category: ExpertiseCategory }) {
+  const cardRef = useRef<HTMLElement>(null);
+  const spotlightRef = useRef<HTMLDivElement>(null);
+  const rectRef = useRef<DOMRect | null>(null);
+  const rafRef = useRef(0);
   const [hovered, setHovered] = useState(false);
-  const [pointer, setPointer] = useState({ x: 0, y: 0, spotX: 50, spotY: 50 });
+  const [pointer, setPointer] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== 0) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, []);
+
+  const onPointerEnter = (e: React.PointerEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    rectRef.current = rect;
+    setHovered(true);
+    if (spotlightRef.current) {
+      const lx = e.clientX - rect.left;
+      const ly = e.clientY - rect.top;
+      spotlightRef.current.style.transform = `translate3d(${lx.toFixed(0)}px, ${ly.toFixed(0)}px, 0)`;
+    }
+  };
 
   const onMove = (e: React.PointerEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const nx = ((e.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
-    const ny = ((e.clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1;
-    setPointer({
-      x: nx,
-      y: ny,
-      spotX: ((e.clientX - rect.left) / Math.max(1, rect.width)) * 100,
-      spotY: ((e.clientY - rect.top) / Math.max(1, rect.height)) * 100,
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    if (rafRef.current !== 0) return;
+
+    rafRef.current = window.requestAnimationFrame(() => {
+      rafRef.current = 0;
+      const rect = rectRef.current ?? cardRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      rectRef.current = rect;
+
+      const lx = clientX - rect.left;
+      const ly = clientY - rect.top;
+      if (spotlightRef.current) {
+        spotlightRef.current.style.transform = `translate3d(${lx.toFixed(0)}px, ${ly.toFixed(0)}px, 0)`;
+      }
+
+      const nx = (lx / Math.max(1, rect.width)) * 2 - 1;
+      const ny = (ly / Math.max(1, rect.height)) * 2 - 1;
+      setPointer((prev) =>
+        Math.abs(nx - prev.x) < 0.06 && Math.abs(ny - prev.y) < 0.06 ? prev : { x: nx, y: ny }
+      );
     });
+  };
+
+  const onPointerLeave = () => {
+    if (rafRef.current !== 0) {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    rectRef.current = null;
+    setHovered(false);
+    setPointer({ x: 0, y: 0 });
   };
 
   return (
     <article
+      ref={cardRef}
       data-scroll-reveal
-      onPointerEnter={() => setHovered(true)}
-      onPointerLeave={() => {
-        setHovered(false);
-        setPointer({ x: 0, y: 0, spotX: 50, spotY: 50 });
-      }}
+      onPointerEnter={onPointerEnter}
+      onPointerLeave={onPointerLeave}
       onPointerMove={onMove}
-      style={{
-        backgroundImage: hovered
-          ? `radial-gradient(480px circle at ${pointer.spotX.toFixed(1)}% ${pointer.spotY.toFixed(
-              1
-            )}%, rgba(210, 154, 92, 0.12), rgba(115, 195, 169, 0.04) 45%, transparent 72%)`
-          : undefined,
-      }}
       className="group relative flex flex-col justify-between overflow-hidden border-t border-[var(--border-hairline)] py-8 transition-colors duration-300 md:grid md:grid-cols-12 md:items-center md:gap-6 md:px-5 hover:border-[var(--border-bronze)]"
     >
+      {/* Compositor-Translated Hover Spotlight (Zero `backgroundImage` radial-gradient repaints!) */}
+      <div
+        ref={spotlightRef}
+        aria-hidden="true"
+        className={`pointer-events-none absolute -top-[480px] -left-[480px] h-[960px] w-[960px] bg-[radial-gradient(480px_circle_at_50%_50%,rgba(210,154,92,0.12),rgba(115,195,169,0.04)_45%,transparent_72%)] transition-opacity duration-300 ${
+          hovered ? "opacity-100" : "opacity-0"
+        }`}
+      />
       {/* Left Molten Bronze Laser Blade on Hover */}
       <span
         aria-hidden="true"

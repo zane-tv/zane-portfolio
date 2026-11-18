@@ -72,7 +72,7 @@ export default function RootLayout({
       lang="en"
       className={`${cormorant.variable} ${beVietnam.variable} ${jetbrains.variable} dark`}
     >
-      <body className="min-h-screen bg-[var(--color-bg-primary)] text-[var(--color-ink)] antialiased">
+      <body className="min-h-screen bg-transparent text-[var(--color-ink)] antialiased">
         <div className="film-grain" aria-hidden="true" />
         {children}
       </body>

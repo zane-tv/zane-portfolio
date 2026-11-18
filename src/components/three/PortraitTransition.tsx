@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { introMotionState } from "@/store/introStore";
-import { HERO_CAMERA_FOV, HERO_CAMERA_Z } from "./CameraRig";
+import { HERO_CAMERA_FOV, HERO_CAMERA_Z } from "./cameraConstants";
 import { BronzeDrum } from "./BronzeDrum";
 import { DrumParticles } from "./DrumParticles";
 import { PortraitReveal } from "./PortraitReveal";

@@ -106,11 +106,11 @@ export function ExperienceSection() {
               data-timeline-progress
               className="absolute inset-0 bg-gradient-to-b from-[#fff3d6] via-[var(--color-bronze-bright)] to-[var(--color-patina)] shadow-[0_0_14px_rgba(246,213,155,0.6)]"
             />
-            {/* Leading Molten Bronze Spark Orb (`Đầu lửa đồng nóng chảy dẫn đường` locked 1:1 to progress tip) */}
+            {/* Leading Molten Bronze Spark Orb (`translate3d` compositor-driven, zero `top` reflow!) */}
             <div
               data-molten-spark
-              style={{ top: "0%", opacity: 0.35 }}
-              className="absolute left-1/2 z-20 -ml-[9.5px] -mt-[9.5px] flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[radial-gradient(circle,#ffffff_0%,#f6d59b_42%,rgba(210,154,92,0)_75%)] shadow-[0_0_24px_6px_rgba(246,213,155,0.85)]"
+              style={{ opacity: 0.35 }}
+              className="absolute top-0 left-1/2 z-20 -ml-[9.5px] -mt-[9.5px] flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[radial-gradient(circle,#ffffff_0%,#f6d59b_42%,rgba(210,154,92,0)_75%)] shadow-[0_0_24px_6px_rgba(246,213,155,0.85)] will-change-transform"
             />
           </div>
 
@@ -131,14 +131,18 @@ export function ExperienceSection() {
                   {milestone.watermarkYear}
                 </span>
 
-                {/* Glowing Đông Sơn Meridian Node */}
+                {/* Glowing Đông Sơn Meridian Node (compositor opacity/scale glow, zero `box-shadow` repaint) */}
                 <span
                   data-milestone-node
                   aria-hidden="true"
                   className="absolute -left-[30px] flex h-4 w-4 items-center justify-center rounded-full border border-[var(--color-bronze-bright)] bg-[var(--color-bg-primary)] sm:-left-[48px]"
                   style={{ top: idx === 0 ? "0.65rem" : "3.4rem" }}
                 >
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#fff3d6]" />
+                  <span
+                    data-milestone-node-glow
+                    className="pointer-events-none absolute -inset-2.5 rounded-full bg-[radial-gradient(circle,rgba(246,213,155,0.72)_0%,rgba(210,154,92,0)_72%)] opacity-0"
+                  />
+                  <span className="relative h-1.5 w-1.5 rounded-full bg-[#fff3d6]" />
                 </span>
 
                 {/* Parallax Era & Rotating Đông Sơn Seal Column */}
@@ -159,7 +163,11 @@ export function ExperienceSection() {
 
                   {/* Đông Sơn Seal that Illuminates & Rotates Open as Molten Spark Reaches It */}
                   <div className="mt-4 flex items-center gap-3.5 lg:mt-6">
-                    <div data-milestone-seal className="origin-center will-change-transform">
+                    <div data-milestone-seal className="relative origin-center">
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute -inset-2.5 -z-10 rounded-full bg-[radial-gradient(circle,rgba(231,185,128,0.42)_0%,transparent_70%)]"
+                      />
                       <MilestoneMotifSeal motif={milestone.motif} />
                     </div>
                     <span className="h-[1px] w-14 bg-gradient-to-r from-[var(--color-bronze)] to-transparent" />

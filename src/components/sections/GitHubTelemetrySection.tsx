@@ -21,25 +21,101 @@ function polar(cx: number, cy: number, r: number, deg: number): [number, number]
 
 export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) {
   const [activeWeekIdx, setActiveWeekIdx] = useState<number>(data.weeks.length - 1);
-  const [radarProgress, setRadarProgress] = useState<number>(0);
   const dialWrapRef = useRef<HTMLDivElement>(null);
+  const radarBeamGroupRef = useRef<SVGGElement>(null);
+  const activeRayGroupRef = useRef<SVGGElement>(null);
+  const weekGroupRefs = useRef<Array<SVGGElement | null>>([]);
+  const weekLineRefs = useRef<Array<SVGLineElement | null>>([]);
+  const radarProgressRef = useRef(0);
 
   const reducedMotion = useIntroStore((s) => s.reducedMotion);
   const locale = useLocaleStore((s) => s.locale);
   const { ui } = getLocalizedPortfolio(locale);
   const tUi = ui.telemetryUi;
 
-  // Clockwise Radar Sweep Reveal when scrolled into view
+  const maxWeekCount = useMemo(
+    () => Math.max(1, ...data.weeks.map((w) => w.count)),
+    [data.weeks]
+  );
+
+  const weekGeometries = useMemo(() => {
+    const totalW = Math.max(1, data.weeks.length);
+    const innerR = 128;
+    return data.weeks.map((wk, idx) => {
+      const deg = ((idx + 0.5) * 360) / totalW;
+      const fullLen = wk.count === 0 ? 3 : 7 + 56 * Math.sqrt(wk.count / maxWeekCount);
+      const [x0, y0] = polar(210, 210, innerR, deg);
+      const [x1Full, y1Full] = polar(210, 210, innerR + fullLen, deg);
+      const [hx1, hy1] = polar(210, 210, 192, deg);
+      return {
+        wk,
+        threshold: idx / totalW,
+        x0,
+        y0,
+        dx: x1Full - x0,
+        dy: y1Full - y0,
+        x0Str: x0.toFixed(2),
+        y0Str: y0.toFixed(2),
+        x1FullStr: x1Full.toFixed(2),
+        y1FullStr: y1Full.toFixed(2),
+        hx1Str: hx1.toFixed(2),
+        hy1Str: hy1.toFixed(2),
+      };
+    });
+  }, [data.weeks, maxWeekCount]);
+
+  // Ref-driven Clockwise Radar Sweep Reveal (zero React re-renders during 1.75s sweep!)
   useEffect(() => {
+    const lastUnfurls = new Float32Array(weekGeometries.length).fill(-1);
+
+    const applyRadarFrame = (p: number) => {
+      radarProgressRef.current = p;
+
+      if (radarBeamGroupRef.current) {
+        const beamActive = p > 0.01 && p < 0.99;
+        radarBeamGroupRef.current.style.opacity = beamActive ? "1" : "0";
+        if (beamActive) {
+          radarBeamGroupRef.current.setAttribute(
+            "transform",
+            `rotate(${(p * 360).toFixed(1)} 210 210)`
+          );
+        }
+      }
+
+      if (activeRayGroupRef.current) {
+        activeRayGroupRef.current.style.opacity = p > 0.25 ? "1" : "0";
+      }
+
+      for (let idx = 0; idx < weekGeometries.length; idx++) {
+        const g = weekGeometries[idx]!;
+        const localUnfurl = Math.max(0, Math.min(1, (p - g.threshold * 0.85) / 0.15));
+        if (localUnfurl === lastUnfurls[idx]) continue;
+        lastUnfurls[idx] = localUnfurl;
+
+        const grp = weekGroupRefs.current[idx];
+        if (grp) {
+          grp.style.opacity = localUnfurl > 0.02 ? "1" : "0";
+        }
+        const line = weekLineRefs.current[idx];
+        if (line) {
+          line.setAttribute("x2", (g.x0 + g.dx * localUnfurl).toFixed(2));
+          line.setAttribute("y2", (g.y0 + g.dy * localUnfurl).toFixed(2));
+        }
+      }
+    };
+
     if (reducedMotion) {
-      setRadarProgress(1);
+      applyRadarFrame(1);
       return;
     }
+
     const el = dialWrapRef.current;
     if (!el || typeof IntersectionObserver === "undefined") {
-      setRadarProgress(1);
+      applyRadarFrame(1);
       return;
     }
+
+    applyRadarFrame(0);
 
     let triggered = false;
     const proxy = { p: 0 };
@@ -53,7 +129,8 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
             p: 1,
             duration: 1.75,
             ease: "power2.out",
-            onUpdate: () => setRadarProgress(proxy.p),
+            onUpdate: () => applyRadarFrame(proxy.p),
+            onComplete: () => applyRadarFrame(1),
           });
           io.disconnect();
         }
@@ -66,12 +143,7 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
       io.disconnect();
       tween?.kill();
     };
-  }, [reducedMotion]);
-
-  const maxWeekCount = useMemo(
-    () => Math.max(1, ...data.weeks.map((w) => w.count)),
-    [data.weeks]
-  );
+  }, [reducedMotion, weekGeometries]);
 
   const activeWeek = data.weeks[activeWeekIdx] ?? data.weeks[0];
 
@@ -104,12 +176,6 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
       deg,
     };
   }, [activeWeekIdx, data.weeks, maxWeekCount]);
-
-  const radarBeamCoords = useMemo(() => {
-    const deg = radarProgress * 360;
-    const [bx, by] = polar(210, 210, 192, deg);
-    return { bx: bx.toFixed(2), by: by.toFixed(2), active: radarProgress > 0.01 && radarProgress < 0.99 };
-  }, [radarProgress]);
 
   const localizedBanner = data.isFallback
     ? data.fallbackReason === "rate_limited"
@@ -282,25 +348,27 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
                   </g>
                 </g>
 
-                {/* Clockwise Radar Sweep Beam during initial scroll reveal */}
-                {radarBeamCoords.active && (
-                  <g pointerEvents="none">
-                    <line
-                      x1="210"
-                      y1="210"
-                      x2={radarBeamCoords.bx}
-                      y2={radarBeamCoords.by}
-                      stroke="#73c3a9"
-                      strokeOpacity="0.85"
-                      strokeWidth="2"
-                    />
-                    <circle cx={radarBeamCoords.bx} cy={radarBeamCoords.by} r="4" fill="#fff3d6" />
-                  </g>
-                )}
+                {/* Clockwise Radar Sweep Beam during initial scroll reveal (ref-driven, zero React re-renders) */}
+                <g ref={radarBeamGroupRef} pointerEvents="none" style={{ opacity: 0 }}>
+                  <line
+                    x1="210"
+                    y1="210"
+                    x2="210"
+                    y2="18"
+                    stroke="#73c3a9"
+                    strokeOpacity="0.85"
+                    strokeWidth="2"
+                  />
+                  <circle cx="210" cy="18" r="4" fill="#fff3d6" />
+                </g>
 
                 {/* Glowing Connector Ray from Central 14-Ray Sun (210, 210) to Active Week! */}
-                {activeRayCoords && radarProgress > 0.25 && (
-                  <g pointerEvents="none">
+                {activeRayCoords && (
+                  <g
+                    ref={activeRayGroupRef}
+                    pointerEvents="none"
+                    style={{ opacity: radarProgressRef.current > 0.25 ? 1 : 0 }}
+                  >
                     <line
                       x1="210"
                       y1="210"
@@ -329,70 +397,50 @@ export function GitHubTelemetrySection({ data }: { data: GitHubTelemetryData }) 
                   </g>
                 )}
 
-                {/* 52 Interactive Weekly Radial Segments with Clockwise Radar Unfurl */}
+                {/* 52 Interactive Weekly Radial Segments with Ref-Driven Clockwise Radar Unfurl */}
                 <g>
-                  {data.weeks.map((wk, idx) => {
-                    const totalW = Math.max(1, data.weeks.length);
-                    const deg = ((idx + 0.5) * 360) / totalW;
-                    const innerR = 128;
-
-                    // Clockwise radar unfurl factor (0 -> 1 as radar beam sweeps past `idx / totalW`)
-                    const threshold = idx / totalW;
-                    const localUnfurl = Math.max(
-                      0,
-                      Math.min(1, (radarProgress - threshold * 0.85) / 0.15)
-                    );
-
-                    const fullLen =
-                      wk.count === 0
-                        ? 3
-                        : 7 + 56 * Math.sqrt(wk.count / maxWeekCount);
-                    const len = fullLen * localUnfurl;
-
-                    const [rawX0, rawY0] = polar(210, 210, innerR, deg);
-                    const [rawX1, rawY1] = polar(210, 210, innerR + len, deg);
-                    const [rawHx1, rawHy1] = polar(210, 210, 192, deg);
-                    const x0 = rawX0.toFixed(2);
-                    const y0 = rawY0.toFixed(2);
-                    const x1 = rawX1.toFixed(2);
-                    const y1 = rawY1.toFixed(2);
-                    const hx1 = rawHx1.toFixed(2);
-                    const hy1 = rawHy1.toFixed(2);
+                  {weekGeometries.map((g, idx) => {
+                    const { wk } = g;
                     const isSelected = idx === activeWeekIdx;
 
                     return (
                       <g
                         key={wk.weekLabel}
+                        ref={(el) => {
+                          weekGroupRefs.current[idx] = el;
+                        }}
                         tabIndex={0}
                         role="button"
                         aria-label={`${wk.weekLabel}, ${wk.dateRange}: ${wk.count} ${tUi.contributionPlural}`}
                         onPointerEnter={() => setActiveWeekIdx(idx)}
                         onFocus={() => setActiveWeekIdx(idx)}
-                        style={{ opacity: localUnfurl > 0.02 ? 1 : 0 }}
                         className="cursor-pointer focus:outline-none"
                       >
                         <line
-                          x1={x0}
-                          y1={y0}
-                          x2={hx1}
-                          y2={hy1}
+                          x1={g.x0Str}
+                          y1={g.y0Str}
+                          x2={g.hx1Str}
+                          y2={g.hy1Str}
                           stroke="transparent"
                           strokeWidth="12"
                         />
                         {wk.count === 0 ? (
                           <circle
-                            cx={x0}
-                            cy={y0}
+                            cx={g.x0Str}
+                            cy={g.y0Str}
                             r={isSelected ? 3.5 : 2}
                             fill={isSelected ? "var(--color-bronze-bright)" : "var(--color-ink-muted)"}
                             fillOpacity={isSelected ? 1 : 0.45}
                           />
                         ) : (
                           <line
-                            x1={x0}
-                            y1={y0}
-                            x2={x1}
-                            y2={y1}
+                            ref={(el) => {
+                              weekLineRefs.current[idx] = el;
+                            }}
+                            x1={g.x0Str}
+                            y1={g.y0Str}
+                            x2={g.x1FullStr}
+                            y2={g.y1FullStr}
                             stroke={isSelected ? "var(--color-bronze-bright)" : "var(--color-patina)"}
                             strokeOpacity={isSelected ? 1 : 0.82}
                             strokeWidth={isSelected ? 5.8 : 4.2}

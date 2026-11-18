@@ -595,3 +595,97 @@ export function createDongSonDrumHandlesGeometry(): THREE.BufferGeometry {
   merged.setIndex(indices);
   return merged;
 }
+
+/**
+ * Merges multiple indexed/non-indexed triangle geometries (with optional per-item Matrix4 transform)
+ * into a single BufferGeometry to collapse draw calls & scene-graph traversals.
+ */
+export function mergeStaticMeshGeometries(
+  parts: Array<{ geometry: THREE.BufferGeometry; matrix?: THREE.Matrix4 }>
+): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const indices: number[] = [];
+  let vertexOffset = 0;
+
+  const v = new THREE.Vector3();
+  const n = new THREE.Vector3();
+  const nMat = new THREE.Matrix3();
+
+  for (const { geometry, matrix } of parts) {
+    const posAttr = geometry.attributes.position as THREE.BufferAttribute;
+    const normAttr = geometry.attributes.normal as THREE.BufferAttribute | undefined;
+    const idxAttr = geometry.index;
+    const flipWinding = matrix ? matrix.determinant() < 0 : false;
+    if (matrix) {
+      nMat.getNormalMatrix(matrix);
+    }
+
+    for (let i = 0; i < posAttr.count; i++) {
+      v.fromBufferAttribute(posAttr, i);
+      if (matrix) v.applyMatrix4(matrix);
+      positions.push(v.x, v.y, v.z);
+
+      if (normAttr) {
+        n.fromBufferAttribute(normAttr, i);
+        if (matrix) n.applyMatrix3(nMat).normalize();
+        normals.push(n.x, n.y, n.z);
+      } else {
+        normals.push(0, 0, 1);
+      }
+    }
+
+    if (idxAttr) {
+      for (let i = 0; i < idxAttr.count; i += 3) {
+        const a = idxAttr.getX(i) + vertexOffset;
+        const b = idxAttr.getX(i + 1) + vertexOffset;
+        const c = idxAttr.getX(i + 2) + vertexOffset;
+        if (flipWinding) {
+          indices.push(a, c, b);
+        } else {
+          indices.push(a, b, c);
+        }
+      }
+    } else {
+      for (let i = 0; i < posAttr.count; i += 3) {
+        const a = i + vertexOffset;
+        const b = i + 1 + vertexOffset;
+        const c = i + 2 + vertexOffset;
+        if (flipWinding) {
+          indices.push(a, c, b);
+        } else {
+          indices.push(a, b, c);
+        }
+      }
+    }
+
+    vertexOffset += posAttr.count;
+  }
+
+  const out = new THREE.BufferGeometry();
+  out.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  out.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+  out.setIndex(indices);
+  return out;
+}
+
+/**
+ * Merges multiple `THREE.LineSegments` BufferGeometries sharing the same material into 1 draw call.
+ */
+export function mergeLineSegmentGeometries(geometries: THREE.BufferGeometry[]): THREE.BufferGeometry {
+  let totalFloats = 0;
+  for (const g of geometries) {
+    const pos = g.attributes.position as THREE.BufferAttribute;
+    totalFloats += pos.count * 3;
+  }
+  const mergedPos = new Float32Array(totalFloats);
+  let offset = 0;
+  for (const g of geometries) {
+    const pos = g.attributes.position as THREE.BufferAttribute;
+    mergedPos.set(pos.array as Float32Array, offset);
+    offset += pos.count * 3;
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute("position", new THREE.BufferAttribute(mergedPos, 3));
+  return out;
+}
